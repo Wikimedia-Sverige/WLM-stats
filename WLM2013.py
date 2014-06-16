@@ -2,19 +2,20 @@
 ##WLM2011 stats getter
 ##Andre Costa
 ##2011-09-30
-import os, codecs, urllib2
+import os, codecs, urllib2, ujson
 
 #import easy to use xml parser called minidom:
 from xml.dom.minidom import parseString
 import sys
-sys.path.append("C:\Program Files\pywikibot-compat")
+#sys.path.append("C:\Program Files\pywikibot-compat") #windows
+sys.path.append("/home/andre/pywikipedia/compat") #linux
 import wikipedia as pywikibot
 import pagegenerators
 '''Since output may include commas all output fields are separated by colons'''
 
 class Prog1:
-    '''Populates a two dictionaries with the bbrID and
-       FornminneID along with the number of images for each ID
+    '''Populates a three dictionaries with the bbrID, FornminneID and FartygID
+       along with the number of images for each ID.
        Also records the first filename encountered for each ID'''
     def __init__(self):
         self.bbr_dict = {}
@@ -24,7 +25,7 @@ class Prog1:
         self.fornCounter = 0
         self.fartygCounter = 0
         self.noCounter = 0
-        self.foutLog = codecs.open(u'.\\logfile2013.txt', 'w', 'utf-8')
+        self.foutLog = codecs.open(u'logfile2013.txt', 'w', 'utf-8')
     ##
     def finalise(self):
         self.foutLog.write('----------------------------------------\n')
@@ -36,23 +37,33 @@ class Prog1:
         print(u'The file %s was created' %(self.foutLog.name,))
     ##
     def dictsToFile(self):
-        bbrOut = codecs.open(u'.\\BBR_dict2013.txt', 'w', 'utf-8')
+        bbrOut = codecs.open(u'BBR_dict2013.txt', 'w', 'utf-8')
         for key in self.bbr_dict.keys():
-            s = u'%s:%d:%s\n' %(key, self.bbr_dict[key][0], self.bbr_dict[key][1])
+            s = u'%s|%d|%s\n' %(key, self.bbr_dict[key][0], self.bbr_dict[key][1])
             bbrOut.write(s)
         bbrOut.close
-        fornOut = codecs.open(u'.\\forn_dict2013.txt', 'w', 'utf-8')
+        fornOut = codecs.open(u'forn_dict2013.txt', 'w', 'utf-8')
         for key in self.forn_dict.keys():
-            s = u'%s:%d:%s\n' %(key, self.forn_dict[key][0], self.forn_dict[key][1])
+            s = u'%s|%d|%s\n' %(key, self.forn_dict[key][0], self.forn_dict[key][1])
             fornOut.write(s)
         fornOut.close
-        fartygOut = codecs.open(u'.\\fartyg_dict2013.txt', 'w', 'utf-8')
+        fartygOut = codecs.open(u'fartyg_dict2013.txt', 'w', 'utf-8')
         for key in self.fartyg_dict.keys():
-            s = u'%s:%d:%s\n' %(key, self.fartyg_dict[key][0], self.fartyg_dict[key][1])
+            s = u'%s|%d|%s\n' %(key, self.fartyg_dict[key][0], self.fartyg_dict[key][1])
             fartygOut.write(s)
         fartygOut.close
         print(u'The files %s, %s and %s were created'% (bbrOut.name, fornOut.name, fartygOut.name))
     ##
+    #Does this overlap with Prog5 methods?
+    def fileToDict(self, infilename):
+        dDict={}
+        infile = codecs.open(infilename, 'r', 'utf-8')
+        lines = infile.read().split('\n')
+        for l in lines:
+            if len(l)==0:continue
+            p = l.split('|')
+            dDict[p[0]] = [int(p[1]),p[2]]
+        return dDict
     def runOnWiki(self):
         '''runs the parser on all imagepages in a given category on Wikimedia Commons'''
         pywikibot.setSite(pywikibot.getSite(u'commons', u'commons'))
@@ -213,29 +224,39 @@ class Prog1:
 ##end of Prog1
 
 #Prog2 should be redone so as to be able to be the same for all types
-class Prog2BBR:
+class Prog2:
     '''Goes over the sv.wiki lists and adds more info to the bbr_dictionary
        also checks if the image is currently illustrated and if not whether
        dictionary contains an appropriate image.'''
-    def __init__(self, bbr_dict):#(self, dDict, prefix)
-        self.bbr_dict = bbr_dict  ##= {}
-        self.illLog = codecs.open(u'.\\illSuggestionsBBR.txt', 'w', 'utf-8')
-        # self.setting = {'defaultCat':u'Listor över byggnadsminnen i Sverige per region', 'testStr':u'Lista över byggnadsminnen i ', 'testStr2':'Lista över kyrkliga kulturminnen i ', 'row':'{{BBR', 'header':'{{BBR-huvud', 'parser':bbrParser2}
+    def __init__(self, dDict, prefix='bbr'):
+        bbrSettings = {'illOut':u'illSuggestionsBBR.txt', 'out':u'BBR_dict2.txt', 'defaultCat':u'Listor över byggnadsminnen i Sverige per region', 'pageParser':self.pageParserBBR}
+        fmisSettings = {'illOut':u'illSuggestionsFMIS.txt', 'out':u'FMIS_dict2.txt', 'defaultCat':[u'Listor över fornminnen i Sverige per kommun', u'Listor över fornminnen i Sverige per socken'], 'pageParser':self.pageParserFMIS}
+        fartygSettings = {'illOut':u'illSuggestionsFartyg.txt', 'out':u'Fartyg_dict2.txt', 'defaultCat':u'K-märkta fartyg', 'pageParser':self.pageParserFartyg}
+        if (prefix=='bbr'): self.settings = bbrSettings
+        elif (prefix=='fmis'): self.settings = fmisSettings
+        elif (prefix=='fartyg'): self.settings = fartygSettings
+        else:
+            print u'Invalid prefix'
+            exit(0)
+        self.dDict = dDict  ##= {}
+        self.illLog = codecs.open(self.settings['illOut'], 'w', 'utf-8')
     ##
     def finalise(self):
         self.illLog.close()
         print(u'The file %s was created' %(self.illLog.name,))
     ##
     def dictToFile(self):
-        bbrOut = codecs.open(u'.\\BBR_dict2.txt', 'w', 'utf-8')
-        for key in self.bbr_dict.keys():
-            s = u'%s:%d:%s' %(key, self.bbr_dict[key][0], self.bbr_dict[key][1])
-            if len(self.bbr_dict[key])>2:
-                s+= u':%s:%s:%s:%s:%s' %(self.bbr_dict[key][2], self.bbr_dict[key][3], self.bbr_dict[key][4], self.bbr_dict[key][5], self.bbr_dict[key][6])
-            s += u'\n'
-            bbrOut.write(s)
-        bbrOut.close
-        print(u'The file %s was created' %(bbrOut.name,))
+        outFile = codecs.open(self.settings['out'], 'w', 'utf-8')
+        for key in self.dDict.keys():
+            s = u'|'.join(self.dDict[key][1:])
+            s = u'%s|%d|%s\n' %(key,self.dDict[key][0],s)
+            #s = u'%s|%d|%s' %(key, self.dDict[key][0], self.dDict[key][1])
+            #if len(self.dDict[key])>2:
+            #    s+= u'|%s|%s|%s|%s|%s' %(self.dDict[key][2], self.dDict[key][3], self.dDict[key][4], self.dDict[key][5], self.dDict[key][6])
+            #s += u'\n'
+            outFile.write(s)
+        outFile.close
+        print(u'The file %s was created' %(outFile.name,))
     ##
     def runOnWiki(self):
         '''runs the parser on all pages in a given category on Swedish Wikipedia'''
@@ -243,21 +264,23 @@ class Prog2BBR:
         pywikibot.setSite(site)
         generator = None
         genFactory = pagegenerators.GeneratorFactory()
-        #read in the desired category in a way which allows a default one to be given by pressing enter
-        defaultCat = u'Listor över byggnadsminnen i Sverige per region'
-        #catTitle = raw_input(u'Category [%s]: '% defaultCat)
-        #catTitle = catTitle or defaultCat
-        catTitle = defaultCat
-        #
-        genFactory.handleArg(u'-cat:'+catTitle)
-        generator = genFactory.getCombinedGenerator()
-        pgenerator = pagegenerators.PreloadingGenerator(pagegenerators.NamespaceFilterPageGenerator(generator, [0]), pageNumber = 10)
-        for page in pgenerator:
-            self.pageParserSV(page.get(throttle = True),page.title())
+        defaultCat = self.settings['defaultCat']
+        pageCount=0
+        if isinstance(defaultCat,unicode):
+            defaultCat = [defaultCat,]
+        for catTitle in defaultCat:
+            genFactory.handleArg(u'-cat:'+catTitle)
+            generator = genFactory.getCombinedGenerator()
+            pgenerator = pagegenerators.PreloadingGenerator(pagegenerators.NamespaceFilterPageGenerator(generator, [0]), pageNumber = 10)
+            for page in pgenerator:
+                pageCount = pageCount+1
+                self.settings['pageParser'](page.get(throttle = True),page.title())
+        print u'processed %d pages' %pageCount
         self.finalise()
         self.dictToFile()
     ##
-    def pageParserSV(self, page, pagename):
+    ##BBR specifikt
+    def pageParserBBR(self, page, pagename):
         testStr = u'Lista över byggnadsminnen i '
         typ = 'B'
         pos = pagename.find(testStr)
@@ -274,13 +297,13 @@ class Prog2BBR:
                 if not lines[i].startswith('{{BBR-huvud'):
                     i = self.bbrParser2(lines, i, lan, typ)
             i += 1
-    ##end of pageParserSV
+    ##end of pageParserBBR
     def bbrParser2(self, lines, i, lan, typ): ## returns false if problematic id
         illustrated = False
         isInDict = False
         line = lines[i]
         ##find all parameters
-        while not lines[i].startswith('| kommun'):
+        while not lines[i].replace(' ','').startswith('|kommun='):
             i += 1
             line = lines[i]
         kommunID = line[len('| kommun = '):].strip()
@@ -295,8 +318,8 @@ class Prog2BBR:
         bbrID = line[len('| bbr = '):].strip()
         i += 1
         line = lines[i]
-        ##match to id in bbr_dict
-        if self.bbr_dict.has_key(bbrID):
+        ##match to id in dDict
+        if self.dDict.has_key(bbrID):
             isInDict = True
         ##check if we have a pic
         if ( line.startswith('| bild') or line.startswith('|bild') ):
@@ -310,64 +333,15 @@ class Prog2BBR:
             exit()
         ##can we add a pic if one is missing?
         if ((not illustrated) and isInDict):
-        self.illLog.write(u'%s:%s:%s:[%d]:%s\n' %(lan, kommunID, bbrID, self.bbr_dict[bbrID][0], self.bbr_dict[bbrID][1]))
-        ##upgrade bbr_dict
+            self.illLog.write(u'%s|%s|%s|[%d]|%s\n' %(lan, kommunID, bbrID, self.dDict[bbrID][0], self.dDict[bbrID][1]))
+        ##upgrade dDict
         if isInDict:
-            t = self.bbr_dict[bbrID]
-            self.bbr_dict[bbrID] = (t[0], t[1], lan, kommunID, latCord, longCord, typ)
+            t = self.dDict[bbrID]
+            self.dDict[bbrID] = (t[0], t[1], lan, kommunID, latCord, longCord, typ)
         return i
     ##end of bbrParser2
-##end of Prog2BBR
-
-class Prog2FMIS:
-    '''Goes over the sv.wiki lists and adds more info to the fmis_dictionary
-       also checks if the image is currently illustrated and if not whether
-       dictionary contains an appropriate image.'''
-    def __init__(self, fmis_dict):
-        self.fmis_dict = fmis_dict  ##= {}
-        self.illLog = codecs.open(u'.\\illSuggestionsFMIS.txt', 'w', 'utf-8')
-    ##
-    def finalise(self):
-        self.illLog.close()
-        print('The file '+self.illLog.name+' was created')
-    ##
-    def dictToFile(self):
-        fmisOut = codecs.open(u'.\\forn_dict2.txt', 'w', 'utf-8')
-        for key in self.fmis_dict.keys():
-            s = key + ':'
-            s +='%d:' % self.fmis_dict[key][0]
-            s += self.fmis_dict[key][1]
-            if len(self.fmis_dict[key])>2:
-                s+=':' + self.fmis_dict[key][2]
-                s+=':' + self.fmis_dict[key][3]
-                s+=':' + self.fmis_dict[key][4]
-                s+=':' + self.fmis_dict[key][5]
-                s+=':' + self.fmis_dict[key][6]
-            s += '\n'
-            fmisOut.write(s)
-        fmisOut.close
-        print('The file '+fmisOut.name+' was created')
-    ##
-    def runOnWiki(self):
-        '''runs the parser on all pages in a given category on Swedish Wikipedia'''
-        site = pywikibot.getSite(u'sv', u'wikipedia')
-        pywikibot.setSite(site)
-        generator = None
-        genFactory = pagegenerators.GeneratorFactory()
-        #read in the desired category in a way which allows a default one to be given by pressing enter
-        defaultCat = u'Listor över fornminnen i Sverige per kommun'
-        catTitle = raw_input(u'Category [%s]: ' % defaultCat)
-        catTitle = catTitle or defaultCat
-        #
-        genFactory.handleArg(u'-catr:'+catTitle)
-        generator = genFactory.getCombinedGenerator()
-        pgenerator = pagegenerators.PreloadingGenerator(pagegenerators.NamespaceFilterPageGenerator(generator, [0]), pageNumber = 10)
-        for page in pgenerator:
-            self.pageParserSV(page.get(throttle = True),page.title())
-        self.finalise()
-        self.dictToFile()
-    ##
-    def pageParserSV(self, page, pagename):
+    ##FMIS section
+    def pageParserFMIS(self, page, pagename):
         lan=''
         lines = page.split('\n')
         i = 0
@@ -379,55 +353,101 @@ class Prog2FMIS:
                 i = self.fmisParser2(lines, i, lan)
             i += 1
         #
-    ##end of pageParserSV
+    ##end of pageParserFMIS
     def fmisParser2(self, lines, i, lan): ## returns false if problematic id
         illustrated = False
         isInDict = False
         line = lines[i]
         ##find all parameters
-        while not lines[i].startswith(' | typ       = '):
+        while not lines[i].replace(' ','').startswith('|typ='):
             i += 1
             line = lines[i]
-        typ = line[len(' | typ       = '):].strip()
+        typ = line.split('=')[1].strip()
         i += 2
         line = lines[i]
-        kommunID = line[len(' | kommun    = '):].strip()
+        kommunID = line.split('=')[1].strip()
         i += 4
         line = lines[i]
-        latCord = line[len(' | lat       = '):].strip()
+        latCord = line.split('=')[1].strip()
         i += 1
         line = lines[i]
-        longCord = line[len(' | long      = '):].strip()
+        longCord = line.split('=')[1].strip()
         i += 1
         line = lines[i]
-        fmisID = line[len(' | id        = '):].strip()
+        fmisID = line.split('=')[1].strip()
         i += 1
         line = lines[i]
-        ##match to id in bbr_dict
-        if self.fmis_dict.has_key(fmisID):
+        ##match to id in dDict
+        if self.dDict.has_key(fmisID):
             isInDict = True
         ##check if we have a pic
-        if ( line.startswith(' | bild      = ') ):
-            splits = line.split('=')
-            if ( len(splits[1].strip()) > 3):
+        if ( line.replace(' ','').startswith('|bild=') ):
+            if ( len(line.split('=')[1].strip()) > 3):
                 illustrated = True
         elif line.startswith('}}'):
             pass
         else:
-            print('varken bild eller }}' + line)
+            print(u'varken bild eller }} %s' %(line,))
             exit()
         ##can we add a pic if one is missing?
         if ((not illustrated) and isInDict):
-            self.illLog.write(lan+':'+kommunID+':'+fmisID+':'+ '[%d]:'%(self.fmis_dict[fmisID][0],) + self.fmis_dict[fmisID][1]+'\n')
-        ##upgrade fmis_dict
+            self.illLog.write(u'%s|%s|%s|%d|%s\n' %(lan, kommunID, fmisID, self.dDict[fmisID][0], self.dDict[fmisID][1]))
+        ##upgrade dDict
         if isInDict:
-            t = self.fmis_dict[fmisID]
-            self.fmis_dict[fmisID] = (t[0], t[1], lan, kommunID, latCord, longCord, typ)
+            t = self.dDict[fmisID]
+            self.dDict[fmisID] = (t[0], t[1], lan, kommunID, latCord, longCord, typ)
         return i
     ##end of fmisParser2
-##end of Prog2FMIS
+    ##end of pageParserFMIS
+    ##Fartyg section
+    def pageParserFartyg(self, page, pagename):
+        if pagename == u'Lista över kulturmärkta fartyg i Sverige':
+            lines = page.split('\n')
+            i = 0
+            while i < len(lines):
+                if lines[i].startswith('{{K-fartyg-huvud'):
+                    pass
+                elif lines[i].startswith('{{K-fartyg'):
+                    i = self.fartygParser2(lines, i)
+                i += 1
+        #
+    ##end of pageParserFartyg
+    def fartygParser2(self, lines, i): ## returns false if problematic id
+        illustrated = False
+        isInDict = False
+        line = lines[i]
+        ##find all parameters
+        while not lines[i].replace(' ','').startswith('|namn='):
+            i += 1
+            line = lines[i]
+        namn = line.split('=')[1].strip()
+        i += 2
+        line = lines[i]
+        signalID = line.split('=')[1].strip()
+        i += 4
+        line = lines[i]
+        hemmahamn = line.split('=')[1].strip()
+        i += 3
+        line = lines[i]
+        bild = line.split('=')[1].strip()
+        i += 2
+        ##match to id in dDict
+        if self.dDict.has_key(signalID):
+            isInDict = True
+        ##check if we have a pic
+        if ( len(bild) > 3):
+            illustrated = True
+        ##can we add a pic if one is missing?
+        if ((not illustrated) and isInDict):
+            self.illLog.write(u'%s|%s|%s|%d|%s\n' %(namn, hemmahamn, signalID, self.dDict[signalID][0], self.dDict[signalID][1]))
+        ##upgrade dDict
+        if isInDict:
+            t = self.dDict[signalID]
+            self.dDict[signalID] = (t[0], t[1], hemmahamn, namn)
+        return i
+    ##end of Fartyg section
+##end of Prog2
 
-#Prog2Fartyg
 
 class Prog3BBR:
     '''Goes through the sv.wiki lists and determines the ratio of illustrated
@@ -436,12 +456,9 @@ class Prog3BBR:
         self.kommun_dict = {}
     ##
     def dictsToFile3(self):
-        bbrCount = codecs.open(u'.\\bbrCounter.txt', 'w', 'ISO-8859-1')
+        bbrCount = codecs.open(u'bbrCounter.txt', 'w', 'utf8')
         for key in self.kommun_dict.keys():
-            s = key + ':'
-            s += '%d:' % (self.kommun_dict[key][0],)
-            s += '%d:' % (self.kommun_dict[key][1],)
-            s += self.kommun_dict[key][2] + '\n'
+            s = '%s|%d|%d|%s\n' %(key,self.kommun_dict[key][0],self.kommun_dict[key][1],self.kommun_dict[key][2])
             bbrCount.write(s)
         bbrCount.close
         print('The file '+bbrCount.name+' was created')
@@ -454,8 +471,9 @@ class Prog3BBR:
         genFactory = pagegenerators.GeneratorFactory()
         #read in the desired category in a way which allows a default one to be given by pressing enter
         defaultCat = u'Listor över byggnadsminnen i Sverige per region'
-        catTitle = raw_input(u'Category [%s]: ' % defaultCat)
-        catTitle = catTitle or defaultCat
+        #catTitle = raw_input(u'Category [%s]: ' % defaultCat)
+        #catTitle = catTitle or defaultCat
+        catTitle = defaultCat
         #
         genFactory.handleArg(u'-cat:'+catTitle)
         generator = genFactory.getCombinedGenerator()
@@ -524,12 +542,9 @@ class Prog3FMIS:
         self.kommun_dict = {}
     ##
     def dictsToFile3(self):
-        fmisCount = codecs.open(u'.\\fornCounter.txt', 'w', 'ISO-8859-1')
+        fmisCount = codecs.open(u'fornCounter.txt', 'w', 'utf-8')
         for key in self.kommun_dict.keys():
-            s = key + ':'
-            s += '%d:' % (self.kommun_dict[key][0],)
-            s += '%d:' % (self.kommun_dict[key][1],)
-            s += self.kommun_dict[key][2] + '\n'
+            s = '%s|%d|%d|%s\n' %(key, self.kommun_dict[key][0], self.kommun_dict[key][1], self.kommun_dict[key][2])
             fmisCount.write(s)
         fmisCount.close
         print('The file '+fmisCount.name+' was created')
@@ -542,8 +557,9 @@ class Prog3FMIS:
         genFactory = pagegenerators.GeneratorFactory()
         #read in the desired category in a way which allows a default one to be given by pressing enter
         defaultCat = u'Listor över fornminnen i Sverige per kommun'
-        catTitle = raw_input(u'Category [%s]: ' % defaultCat)
-        catTitle = catTitle or defaultCat
+        #catTitle = raw_input(u'Category [%s]: ' % defaultCat)
+        #catTitle = catTitle or defaultCat
+        catTitle = defaultCat
         #
         genFactory.handleArg(u'-catr:'+catTitle)
         generator = genFactory.getCombinedGenerator()
@@ -606,22 +622,14 @@ class Prog4:
     '''Goes through the kulturdata rdf files and extracts more parameters to add to the forn_dict'''
     def __init__(self, forn_dict={}):
         self.forn_dict = forn_dict
-        self.foutLog = codecs.open(u'.\\logForn.txt', 'w', 'utf-8')
+        self.foutLog = codecs.open(u'logForn.txt', 'w', 'utf-8')
     ##
     def dictToFile(self):
         '''outputs the updated forn_dict'''
-        fornOut = codecs.open(u'.\\forn_dict2_extra.txt', 'w', 'utf-8')
+        fornOut = codecs.open(u'forn_dict2_extra.txt', 'w', 'utf-8')
         for key in self.forn_dict.keys():
-            s = key + ':'
-            s +='%d:' % int(self.forn_dict[key][0])
-            s += self.forn_dict[key][1]
-            if len(self.forn_dict[key])>2:
-                s+=':' + self.forn_dict[key][2]
-                s+=':' + self.forn_dict[key][3]
-                s+=':' + self.forn_dict[key][4]
-                s+=':' + self.forn_dict[key][5]
-                s+=':' + self.forn_dict[key][6]
-            s += '\n'
+            s = u'%s|%d|' % (key, int(self.forn_dict[key][0]))
+            s+= u'|'.join(self.forn_dict[key][1:]) + '\n'
             fornOut.write(s)
         fornOut.close
         print('The file '+fornOut.name+' was created')
@@ -631,7 +639,7 @@ class Prog4:
            created based on a file (as outputed by Prog1)'''
         #open the file for reading:
         try:
-            fil = codecs.open(u'.\\'+fileName, 'r', 'utf-8')
+            fil = codecs.open(fileName, 'r', 'utf-8')
         except IOError:
             print 'The given parameter doesn not seem to be a valid filename'
             exit()
@@ -645,7 +653,7 @@ class Prog4:
         #parse lines
         lines = data.split('\n')
         for line in lines:
-            entries = line.split(':')
+            entries = line.split('|')
             self.forn_dict[entries[0]] = (int(entries[1]), entries[2])
     #
     def getFromKulturarvsdata(self, id):
@@ -668,7 +676,7 @@ class Prog4:
         '''Mainly for testing. This does the job of the above but taking the rdf data from a loccal file'''
         #open the file for reading:
         try:
-            fil = codecs.open(u'.\\'+fileName, 'r')
+            fil = codecs.open(fileName, 'r', 'utf-8')
         except IOError:
             print 'The given parameter doesn not seem to be a valid filename'
             exit()
@@ -726,7 +734,7 @@ class Prog4:
             self.forn_dict[fornID] = (t[0], t[1], county, kommun, coord[1], coord[0], typ)
         else:
             print('You\'ve run this parser for a stand-alone ID so all I can do is print it out.\n')
-            print(county+':'+kommun+':'+coord[1]+':'+coord[0]+':'+typ)
+            print(u'%s|%s|%s|%s|%s' %(county, kommun, coord[1], coord[0], typ))
     ##
 ##end of Prog4
 class Prog5:
@@ -736,7 +744,7 @@ class Prog5:
         '''Reads in a and parses a file containing an dict or augmented dict, i.e. bbr_dict2.txt, forn_dict2.txt'''
         #open the file for reading:
         try:
-            fil = codecs.open(u'.\\'+fileName, 'r', codec)
+            fil = codecs.open(fileName, 'r', codec)
         except IOError:
             print 'The given parameter doesn not seem to be a valid filename'
             exit()
@@ -752,7 +760,7 @@ class Prog5:
         lines = data.split('\n')
         for line in lines:
             if len(line) >0:
-                entries = line.split(':')
+                entries = line.split('|')
                 if (len(entries)<4):##some will stil be unaugmented
                     aDict[entries[0]] = (int(entries[1]), entries[2])
                 else:
@@ -780,12 +788,12 @@ class Prog5:
                     typ_dict[typ] = (typ_dict[typ][0]+num,typ_dict[typ][1]+1)
         #read in the desired category in a way which allows a default one to be given by pressing enter
         fileName = input(u'Filename [e.g. u\'dictCounter_forn.txt\']: ')
-        dictOut = codecs.open(u'.\\'+fileName, 'w', 'utf-8')
+        dictOut = codecs.open(fileName, 'w', 'utf-8')
         for key in county_dict.keys():
-            dictOut.write(key+':%d:%d\n' % (county_dict[key][0],county_dict[key][1]))
+            dictOut.write(key+'|%d|%d\n' % (county_dict[key][0],county_dict[key][1]))
         dictOut.write('\n-----------------------------------------------------------------------------------------------\n\n')
         for key in typ_dict.keys():
-            dictOut.write(key+':%d:%d\n' % (typ_dict[key][0],typ_dict[key][1]))
+            dictOut.write('%s|%d|%d\n' % (key, typ_dict[key][0],typ_dict[key][1]))
         dictOut.close()
         print('The file '+dictOut.name+' was created')
     #
@@ -815,11 +823,95 @@ class Prog5:
                     muni_dict[muni] = (muni_dict[muni][0]+num,muni_dict[muni][1],muni_dict[muni][2]+1)
         #read in the desired filename in a way which allows a default one to be given by pressing enter
         fileName = input(u'Filename [e.g. u\'muniCounter.txt\']: ')
-        dictOut = codecs.open(u'.\\'+fileName, 'w', 'utf-8')
-        dictOut.write('##id:total_number_of_images:num_unique_bbr:num_unique_forn\n')
+        dictOut = codecs.open(fileName, 'w', 'utf-8')
+        dictOut.write('##id|total_number_of_images|num_unique_bbr|num_unique_forn\n')
         for key in muni_dict.keys():
-            dictOut.write(key+':%d:%d:%d\n' % (muni_dict[key][0],muni_dict[key][1],muni_dict[key][2]))
+            dictOut.write('%s|%d|%d|%d\n' % (key, muni_dict[key][0],muni_dict[key][1],muni_dict[key][2]))
         dictOut.close()
         print('The file '+dictOut.name+' was created')
     #
 ##End of Prog5
+
+class DateProg:
+    def __init__(self):
+        self.date_dict = {}
+        self.dateCounter = 0
+        self.noCounter = 0
+        self.foutLog = codecs.open(u'logfileDate.txt', 'w', 'utf-8')
+    #
+    def finalise(self):
+        self.foutLog.write('----------------------------------------\n')
+        self.foutLog.write('Date:  %d (%d)\n' % (self.dateCounter, len(self.date_dict)))
+        self.foutLog.write('NO:   %d\n' % (self.noCounter, ))
+        self.foutLog.close()
+        print('The file '+self.foutLog.name+ ' was created')
+    ##
+    def dictToFile(self):
+        dateOut = codecs.open(u'date_dict.txt', 'w', 'utf-8')
+        for key in self.date_dict.keys():
+            s = u'%s|%d\n' %(key, self.date_dict[key][0])
+            dateOut.write(s)
+        dateOut.close
+        print('The file '+dateOut.name+' was created')
+    ##
+    def runOnWiki(self):
+        '''runs the parser on all imagepages in a given category on Wikimedia Commons'''
+        pywikibot.setSite(pywikibot.getSite(u'commons', u'commons'))
+        generator = None
+        genFactory = pagegenerators.GeneratorFactory()
+        #read in the desired category in a way which allows a default one to be given by pressing enter
+        defaultCat = u'Images from Wiki Loves Monuments 2013 in Sweden'
+        catTitle = raw_input(u'Category [%s]: '% defaultCat)
+        catTitle = catTitle or defaultCat
+        genFactory.handleArg(u'-cat:'+catTitle)
+        generator = genFactory.getCombinedGenerator()
+        pgenerator = pagegenerators.PreloadingGenerator(pagegenerators.NamespaceFilterPageGenerator(generator, [6]), pageNumber = 100)
+        for page in pgenerator:
+            imagepage = pywikibot.ImagePage(page.site(), page.title())
+            self.pageParser(imagepage.get(throttle = True),page.title())
+        self.finalise()
+        self.dictToFile()
+    ##
+    ##Parses the commons page for recognised date-tags
+    def pageParser(self, page, pagename):
+        pagename = pagename[len('File:'):]
+        found = False      ##wether a bbr, fornmine or ovr tag was found
+        ##
+        lines = page.split('\n')
+        for line in lines:
+            if ('|date' in line) or ('|Date' in line) :               ##only parse the relevant lines
+                if self.dateParser(line, pagename):
+                    self.dateCounter += 1
+                found = True
+                break
+        if (not found):   ##no tags found 
+            self.noCounter += 1
+            self.foutLog.write('No valid tag in ' +pagename+'\n')
+    ##end of pageParser
+    def dateParser(self, line, filename): ## returns false if problematic id
+        ##find the id
+        testStr = '|date='
+        pos = line.find(testStr)
+        if pos < 0:
+            testStr = '|Date='
+            pos = line.find(testStr)
+            if pos < 0:
+                testStr = '|Date           ='
+                pos = line.find(testStr)
+                if pos <0:
+                    self.foutLog.write('Date missread:' + line+'\n')
+                    return False
+        pos = pos + len(testStr)
+        line = line[pos:]
+        line.strip()
+        date = line[:7] ##just keep year and month
+        ##
+        if not self.date_dict.has_key(date):
+            self.date_dict[date] = (1,)
+        else:
+            t = self.date_dict[date]
+            num = t[0] + 1
+            self.date_dict[date] = (num, )
+        return True
+    ##
+#
