@@ -1,7 +1,41 @@
 # -*- coding: utf-8  -*-
+##Remake of WLM2011 stats-getter (2011-09-30)
 ##WLM2011 stats getter
-##Andre Costa
-##2011-09-30
+##André Costa
+##2014
+##
+## Prog1: Updated
+##   Populates three dictionaries with the bbrID, FornminneID and FartygID
+##   along with the number of images for each ID.
+##   Also records the first filename encountered for each ID
+## 
+## Prog2: Updated
+##   Goes over the sv.wiki lists and adds more info to the dictionaries
+##   also checks if the object is currently illustrated and if not whether
+##   dictionary contains an appropriate image.
+## 
+## Prog3: -not updated
+##   Goes through the sv.wiki lists and determines the ratio of illustrated
+##   to unillustrated entries for each municipality'''
+##   
+##   Can be unified
+## 
+## Prog4:
+##   Goes through the kulturdata rdf files and extracts more parameters to add to the forn_dict
+##
+##   Note new classification
+## 
+## Prog5:
+##   contains two static methods for dealing with the bbr and forn dictionaries
+##
+##   What does this really do. Is it actually needed
+##
+## New:
+##   Most of the data analysis done in the Calc doc should be done here (incl. map generation)
+##   Everything should be run though one call (albeit one which outputs statefiles in between each step (and where each step can be run with this as a start.
+##   Should dependence on pywikibot be discontinued
+##   The heritage api exists, use it instead of going to lists!
+## 
 import os, codecs, urllib2, ujson
 
 #import easy to use xml parser called minidom:
