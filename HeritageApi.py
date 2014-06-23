@@ -98,7 +98,7 @@ class HeritageApi(wikiApi.WikiApi):
         
         monuments = jsonr['monuments']
         
-        #these are returned 100 at a time so now get the rest
+        #these are returned "limit" at a time so now get the rest
         while 'continue' in jsonr.keys():
             if verbose:
                 print 'Retrieved %d objects' %len(monuments)

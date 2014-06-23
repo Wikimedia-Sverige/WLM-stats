@@ -1,36 +1,41 @@
 {
-  "bbr": {
-	"table": "se-bbr",
-	"default_wp_cat": [
-      "Listor över byggnadsminnen i Sverige per region"
-    ],
-    "commons_cat": "Protected buildings in Sweden with known IDs",
-	"commons_template": "BBR",
-	"url_pattern": "http://www.bebyggelseregistret.raa.se/bbr2/anlaggning/visaHistorik.raa?page=historik&visaHistorik=true&anlaggningId=",
-	"per_muni": true,
-    "url_promised": true
-  },
-  "fmis": {
-	"table": "se-fornmin",
-	"default_wp_cat": [
-      "Listor över fornminnen i Sverige per kommun",
-      "Listor över fornminnen i Sverige per socken"
-    ],
-    "commons_cat": "Archaeological monuments in Sweden with known IDs",
-	"commons_template": "Fornminne",
-	"url_pattern": "http://kulturarvsdata.se/raa/fmi/html/",
-	"per_muni": true,
-    "url_promised": true
-  },
-  "fartyg":{
-	"table": "se-ship",
-	"default_wp_cat": [
-      "K-märkta fartyg"
-    ],
-    "commons_cat": "Listed historical ships in Sweden with known IDs",
-	"commons_template": "K-Fartyg",
-	"url_pattern": "http://www.sjohistoriska.se/sv/Kusten-runt/Fartyg--batar/K-markning-av-fartyg/K-markta-fartyg/",
-	"per_muni": false, 
-    "url_promised": false
+  "cats": [
+    "Category:Images from Wiki Loves Monuments 2013 in Sweden"
+  ],
+  "types": {  
+      "bbr": {
+        "table": "se-bbr",
+        "default_wp_cat": [
+          "Listor över byggnadsminnen i Sverige per region"
+        ],
+        "commons_cat": "Protected buildings in Sweden with known IDs",
+        "commons_template": "BBR",
+        "url_pattern": "http://www.bebyggelseregistret.raa.se/bbr2/anlaggning   visaHistorik.raa?page=historik&visaHistorik=true&anlaggningId=",
+        "per_muni": true,
+        "url_promised": true
+      },
+      "fmis": {
+        "table": "se-fornmin",
+        "default_wp_cat": [
+          "Listor över fornminnen i Sverige per kommun",
+          "Listor över fornminnen i Sverige per socken"
+        ],
+        "commons_cat": "Archaeological monuments in Sweden with known IDs",
+        "commons_template": "Fornminne",
+        "url_pattern": "http://kulturarvsdata.se/raa/fmi/html/",
+        "per_muni": true,
+        "url_promised": true
+      },
+      "fartyg":{
+        "table": "se-ship",
+        "default_wp_cat": [
+          "K-märkta fartyg"
+        ],
+        "commons_cat": "Listed historical ships in Sweden with known IDs",
+        "commons_template": "K-Fartyg",
+        "url_pattern": "http://www.sjohistoriska.se/sv/Kusten-runt/Fartyg--batar/K-markning-av-fartyg/K-markta-fartyg/",
+        "per_muni": false, 
+        "url_promised": false
+      }
   }
 }

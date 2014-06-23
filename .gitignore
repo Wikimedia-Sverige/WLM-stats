@@ -1,3 +1,4 @@
+config.py
 *.txt
 *.log
 *.test.*
