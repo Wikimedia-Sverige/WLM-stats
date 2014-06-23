@@ -529,8 +529,6 @@ class WLMStats(object):
             if needle in dateOrig: 
                 dateOrig = dateOrig[dateOrig.find(needle):]
                 date = dateOrig.split('"')[3]
-                if len(dateOrig.split('>,'))==2:
-                    date += dateOrig.split('>,')[1]
                 obj['created'] = date
             elif u'<time' in dateOrig: #weird
                 return (False, u'%s did not have a recognised datestamp: %s' %(title, dateOrig))
