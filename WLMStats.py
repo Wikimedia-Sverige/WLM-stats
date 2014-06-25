@@ -27,6 +27,7 @@ import datetime #for timestamps  in log
 import WikiApi as wikiApi
 import HeritageApi as heritageApi
 import dataDicts #redo as json?
+import re #only used for wikitext parsing
 
 class WLMStats(object):
     def versionInfo(self):
@@ -97,7 +98,9 @@ class WLMStats(object):
         #Create output files (so that any errors occur before the actual run)
         try:
             self.fState  = codecs.open(u'%s.state' %self.output, 'w', 'utf-8')
+            self.fMonumentsDump = codecs.open(u'%s-monuments.json' %self.output, 'w', 'utf-8')
             self.fMuni   = codecs.open(u'%s-muni.csv' %self.output, 'w', 'utf-8')
+            self.fImagesDump = codecs.open(u'%s-images.json' %self.output, 'w', 'utf-8')
             self.fImages = codecs.open(u'%s-images.csv' %self.output, 'w', 'utf-8')
         except IOError, e:
             self.log.write(u'Error creating output files: %s\n' %e)
@@ -138,7 +141,8 @@ class WLMStats(object):
         #TODO return errors
         monuments = self.getAllMonuments()
         #output to .state file + make it possible to run from this point
-        self.fState.write(ujson.dumps(monuments))
+        self.fMonumentsDump.write(ujson.dumps(monuments))
+        self.fMonumentsDump.close()
         
         #get all images for the relevant categories, parse the image info
         ##set monument_type(s) using any tracker categories (empty if none found)
@@ -165,6 +169,9 @@ class WLMStats(object):
                     self.images[k]['county'] = monuments[idno]['county']
                     break #no need to check later ids
         
+        #output to .state file + make it possible to run from this point
+        self.fImagesDump.write(ujson.dumps(images))
+        self.fImagesDump.close()
         #tmp
         self.images['_structure'] = {'copyright':False, 'title':False, 'photographer':False, 'created':False, 'uploader':False, 'monument_type':True, 'monument_id':True, 'in_list' :False, 'problematic' :False, 'muni':False, 'county':False}
         self.outputCSV(self.images, self.fImages)
@@ -172,7 +179,8 @@ class WLMStats(object):
         #consider looking in external database for items with not_in_list:true
         #output to .state file + make it possible to run from this point
         
-        #analyse image data on both an individual level and on a per-unique-id basis and output to
+        #analyse image data on both an individual level and on a per-unique-id basis and output
+        ##This part should definitly be runnable from state file (since the previous is the expensive bit)
         ##output to csv(s) (f?)
         
         return None
@@ -586,9 +594,45 @@ class WLMStats(object):
                         found = True
             if not found:
                 #no id found for a monument_type known to be present
-                if self.settings['types'][mt]['commons_template'] in templates:
+                type_template = self.settings['types'][mt]['commons_template']
+                if (u'Template:' +type_template) in templates: #check that template is actually there
                     print 'need to do something with the wikitext'
-                    return 'plupp'
+                    tags = []
+                    #regex and replace to
+                    ##convert to lowercase (to avoid problem with capitalisation of first letter of template)
+                    ##replace '{{template:' by '{{' (sometimes still used)
+                    ## remove any whitespace between '{{' and template name
+                    ## remove any whitespace before '|'
+                    wikitext = re.sub(r'{{[(template:|\s) ]*', '{{', re.sub(r'[\s]*\|', '|', wikitext.lower()))
+                    
+                    #search for {{templatename| to remove false positives (e.g. {{templatename-not|) and ensure there is always at least one parameter
+                    while wikitext.find(('{{'+type_template+'|').lower()) >=0: 
+                        wikitext = wikitext[wikitext.find('{{'+type_template+'|')+len('{{'):] #crop until first tag, incl. brackets to avoid loop
+                        tags.append(wikitext[:wikitext.find('}}')]) # isolate first tag
+                        
+                    if tags:
+                        #assumes id is first parameter (without an alias) (true for 2014 and before)
+                        for t in tags:
+                            idNo = None
+                            vals = t.split('|')
+                            if not '=' in vals[1]: #first one is template name
+                                idNo = vals[1].strip()
+                                self.images[pageId][u'monument_id'].append((mt, vals[1].strip()))
+                                
+                            else:
+                                for v in vals[1:]:
+                                    p = v.split('=')
+                                    if p[0].strip() == '1':
+                                        idNo = p[1].strip()
+                                        break
+                            #store idNo or return error
+                            if idNo:
+                                self.images[pageId][u'monument_id'].append((mt, idNo))
+                                self.log.write('Isolated id from tag: %s from %s' %(tag,idNo)) #for TESTING
+                            else:
+                                return u'categorised as %s, with template %s, and tag %s but idNo could not be isolated' %(mt, type_template, tag)
+                    else:
+                        return u'categorised as %s, with template %s but tag could not be isolated' %(mt, type_template)
                 else:
                     return u'categorised as %s but no template/url present' %mt
         
