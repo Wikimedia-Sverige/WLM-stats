@@ -45,8 +45,8 @@ class WLMStats(object):
         self.gcmlimit = 250 #Images to process per API request in ImageInfo
         self.output = "output/wlm-se"
         self.settings_file = u'settings.json'
-        self._test_gcmlimit = 50
-        self._test_limit = 150
+        self._test_gcmlimit = 5
+        self._test_limit = 15
         
         #distingusih testdata
         if test:
@@ -139,7 +139,7 @@ class WLMStats(object):
         
         #get all heritage_objects from heritage api and repackage to have table+id as key in dict
         #TODO return errors
-        monuments = self.getAllMonuments()
+        monuments = self.getAllMonuments(verbose=verbose, testing=testing)
         #output to .state file + make it possible to run from this point
         self.fMonumentsDump.write(ujson.dumps(monuments))
         self.fMonumentsDump.close()
@@ -170,7 +170,7 @@ class WLMStats(object):
                     break #no need to check later ids
         
         #output to .state file + make it possible to run from this point
-        self.fImagesDump.write(ujson.dumps(images))
+        self.fImagesDump.write(ujson.dumps(self.images))
         self.fImagesDump.close()
         #tmp
         self.images['_structure'] = {'copyright':False, 'title':False, 'photographer':False, 'created':False, 'uploader':False, 'monument_type':True, 'monument_id':True, 'in_list' :False, 'problematic' :False, 'muni':False, 'county':False}
@@ -185,7 +185,7 @@ class WLMStats(object):
         
         return None
 
-    def getAllMonuments(self):
+    def getAllMonuments(self, testing=False, verbose=False):
         '''get all heritage_objects from heritage api and return as a dict
         with (country, id) as key
         :return: dict with (country, id):{muni, illustrated, lon, lat, county, source}
@@ -194,7 +194,7 @@ class WLMStats(object):
         monumentDump = []
         for k, v in self.settings['types'].iteritems():
             table_to_type[v['table']] = k
-            monumentDump += self.hApi.getAllEntries(table=v['table'], verbose=True)
+            monumentDump += self.hApi.getAllEntries(table=v['table'], verbose=verbose)
         
         #clean up
         monuments = {}
@@ -508,6 +508,12 @@ class WLMStats(object):
             obj['photographer'] = self.linkCleanup(artist)
             if user in artist:
                 obj['uploader'] = user
+            else: 
+                if '.org/wiki/User:' in obj['photographer']:
+                    #normally means image has been touched by other user afterwards
+                    obj['uploader'] = obj['photographer'][obj['photographer'].find('.org/wiki/User:')+len('.org/wiki/User:'):obj['photographer'].find('"',obj['photographer'].find('.org/wiki/User:'))]
+                else:
+                    obj['uploader'] = obj['photographer']
         elif user: #if only uploader is given
             #should this be allowed?
             obj['photographer'] = None
@@ -592,11 +598,10 @@ class WLMStats(object):
                     if e.startswith(u):
                         self.images[pageId][u'monument_id'].append((mt, e[len(u):].strip()))
                         found = True
-            if not found:
+            if not found: #need to do something with the wikitext
                 #no id found for a monument_type known to be present
                 type_template = self.settings['types'][mt]['commons_template']
                 if (u'Template:' +type_template) in templates: #check that template is actually there
-                    print 'need to do something with the wikitext'
                     tags = []
                     #regex and replace to
                     ##convert to lowercase (to avoid problem with capitalisation of first letter of template)
