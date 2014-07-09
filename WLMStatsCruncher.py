@@ -194,7 +194,7 @@ class WLMStatsCruncher(object):
         for t, v in results.iteritems():
             sortedV = sortedDict(v)
             for i in range(0,top):
-                f.write(u'%s: %s %d\n' %(t, sortedV[i][0].split(';')[1], sortedV[i][1]))
+                f.write(u'%s|%s|%d\n' %(t, sortedV[i][0].split(';')[1], sortedV[i][1]))
         f.close()
         
         
