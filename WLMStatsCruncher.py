@@ -50,7 +50,7 @@ class WLMStatsCruncher(object):
     def loadVariables(self, test):
         '''semi-stable variables which are not project specific'''
         self.logFilename = u'¤WLMStatsCruncher.log'
-        self.output = "output/crunch-"
+        self.output = "analysis/"
         self.reqKeys = [u'type', u'data', u'WLMStatsVersion']
         self.supportedTypes = ['images',]
         
@@ -121,36 +121,43 @@ class WLMStatsCruncher(object):
         Checks self.indataType to decide which list to follow'''
         
         self.analyseUsers()
+        self.analyseGeo()
         
         #Done
     
     def analyseUsers(self):
         users, blanks = self.analyseSimple('uploader')
         
-        #test
-        ##no. usets = len(users)
-        ##no. images (per user) = len(users[user])
-        ##no uniques (per user) = sum(users[user].values())
-        self.log.write('\n\nno. users: %d\n' %len(users))
-        self.log.write('no. blanks: %d\n' %blanks)
-        self.log.write('no. images\tno. uniques\tusername\n')
+        #output
+        f = codecs.open(u'%susers.csv' %self.output, 'w', 'utf-8')
+        f.write('#no. users: %d\n' %len(users))
+        f.write('#no. blanks: %d\n' %blanks)
+        f.write('#username|no. images|no. uniques\n')
         for k, v in users.iteritems():
-            self.log.write('%d\t%d\t%s\n' %(sum(v.values()), len(v), k))
+            f.write('%s|%d|%d\n' %(k, sum(v.values()), len(v)))
+        f.close()
     
     def analyseSimple(self, key):
-        '''analyses how many images (total and unique) there are for a given key
+        '''analyses how many images (total and unique) there are for each object of a given type/key
         return: a tuple (results, blanks) where
             results is a dict with {key:{monument_id:images-with-that-id-and-key}}
             blanks is the total number of images without a valid monuent_id
-        raises: MyException if key not found'''
+        raises: MyException if key not found
+        
+        to use:
+            users, blanks = self.analyseSimple('uploader')
+            no._objects_of_that_type = len(users)
+            no._images_per_user      = len(users[user])
+            no._uniques_per_user     = sum(users[user].values())
+        '''
         if not key in self.indata.values()[0].keys():
             raise MyException('analyseSimple() called with invalid key %s' %key)
         results = {}
         blanks = 0
         for k,v in self.indata.iteritems():
             value, monument_id = v[key], unicode(v['monument_id'])
-            #skip any entries without valid monument_id
-            if monument_id == '[]':
+            #skip any entries without valid monument_id or value
+            if any(k in ('[]','') for k in (value, monument_id)):
                 blanks +=1
                 continue
             if not value in results.keys():
@@ -160,7 +167,77 @@ class WLMStatsCruncher(object):
             else:
                 results[value][monument_id] += 1
         return results, blanks
-
+    
+    def analyseGeo(self):
+        results = {}
+        blanks = 0
+        monument_types = []
+        for k,v in self.indata.iteritems():
+            try:
+                muni, county, monument_type, monument_id = v['muni'], v['county'], v['monument_type'], unicode(v['monument_id'])
+            except KeyError:
+                #some images don't have county/muni
+                #TODO: better that WLMStats outputs empty values
+                blanks +=1
+                continue
+            #skip any entries without valid monument_id
+            if any(k in('[]','') for k in (muni, county, monument_type, monument_id)):
+                blanks +=1
+                continue
+            if not county in results.keys():
+                results[county]={}
+            if not muni in results[county].keys():
+                results[county][muni]={}
+            for m in monument_type:
+                if not m in monument_types:
+                    monument_types.append(m)
+                if not m in results[county][muni].keys():
+                    results[county][muni][m]={}
+                if not monument_id in results[county][muni][m].keys():
+                    results[county][muni][m][monument_id] = 1
+                else:
+                    results[county][muni][m][monument_id] += 1
+        
+        #output
+        fMuni = codecs.open(u'%sgeo-muni.csv' %self.output, 'w', 'utf-8')
+        fCounty = codecs.open(u'%sgeo-county.csv' %self.output, 'w', 'utf-8')
+        header = u'#Note that the same image can be counted in multiple types\n#no. blanks: %d' %blanks
+        #for each county/muni we want overall/by_type totals and uniques
+        by_type_row=''
+        for t in monument_types:
+            by_type_row += '|%s_images|%s_uniques' %(t,t)
+        #lables
+        fMuni.write('%s\n#muni_code|muni_name|total_images|total_uniques%s\n' % (header, by_type_row))
+        fCounty.write('%s\n#county_code|county_name|total_images|total_uniques%s\n' % (header, by_type_row))
+        
+        for county in results.keys():
+            c_images = dict.fromkeys(monument_types,0)
+            c_uniques = dict.fromkeys(monument_types,0)
+            for muni in results[county].keys():
+                m_images = dict.fromkeys(monument_types,0)
+                m_uniques = dict.fromkeys(monument_types,0)
+                for t in monument_types:
+                    if not t in results[county][muni].keys():
+                        continue
+                    m_uniques[t] += len(results[county][muni][t])
+                    m_images[t] += sum(results[county][muni][t].values())
+                #types done
+                by_type_row = ''
+                for t in monument_types:
+                    by_type_row += '|%d|%d' %(m_images[t], m_uniques[t])
+                    c_images[t] += m_images[t]
+                    c_uniques[t] += m_uniques[t]
+                fMuni.write('%s|%s|%d|%d%s\n' % (muni, dataDicts.muni_code2Name[muni.lstrip('0')], sum(m_images.values()), sum(m_uniques.values()), by_type_row))
+            #munis done
+            by_type_row = ''
+            for t in monument_types:
+                by_type_row += '|%d|%d' %(c_images[t], c_uniques[t])
+            fCounty.write('%s|%s|%d|%d%s\n' % (county, dataDicts.county_code2Name[county[len('se-'):].upper()], sum(c_images.values()), sum(c_uniques.values()), by_type_row))
+        #counties done
+        fMuni.close()
+        fCounty.close()
+        
+        
 class MyException(Exception):
     pass
 
