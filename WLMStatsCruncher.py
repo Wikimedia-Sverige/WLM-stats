@@ -13,32 +13,12 @@
 #Random notes
 #Ladda json:
 #Kan inte göra en initial "unik" sökning. Då år, uppladdare etc. skiljer sig.
-
-#För var statistiktyp (ex. användare)
-
-#users = {}
-#for k,v in imagestats.iteritems():
-	#user, monument_id = v[user], v[idno]
-	#if not user in users.keys():
-		#users[user]={}
-	#if not monument_id in users[user].key():
-		#users[user][monument_id] = 1
-	#else:
-		#users[user][monument_id] += 1
-
-#Then:
-#no users:					len(users)
-#no unique objects per user:	len(users[user])
-#no images per user:			
-#							sum=0
-#							for k,v in users[user].iteritems():
-#								sum +=v
-
 #in images [u'monument_id', u'muni', u'copyright', u'title', u'problematic', u'created', u'in_list', u'county', u'uploader', u'photographer', u'monument_type']
 
 import codecs, ujson
 import datetime #for timestamps  in log
 import dataDicts #redo as json?
+import operator #only used by sortedDict
 
 class WLMStatsCruncher(object):
     def versionInfo(self):
@@ -120,25 +100,17 @@ class WLMStatsCruncher(object):
         with each bit and then outputting it.
         Checks self.indataType to decide which list to follow'''
         
-        self.analyseUsers()
-        self.analyseGeo()
+        self.analyseUsers() #images per user
+        self.analyseGeo()   #images per county/muni and type
+        self.analyseObjects(   #most popular images per type
+            self.analyseType() #images per type
+        )
         
         #Done
     
-    def analyseUsers(self):
-        users, blanks = self.analyseSimple('uploader')
-        
-        #output
-        f = codecs.open(u'%susers.csv' %self.output, 'w', 'utf-8')
-        f.write('#no. users: %d\n' %len(users))
-        f.write('#no. blanks: %d\n' %blanks)
-        f.write('#username|no. images|no. uniques\n')
-        for k, v in users.iteritems():
-            f.write('%s|%d|%d\n' %(k, sum(v.values()), len(v)))
-        f.close()
-    
-    def analyseSimple(self, key):
+    def analyseSimple(self, key, lable=None):
         '''analyses how many images (total and unique) there are for each object of a given type/key
+        the type must be a simple string
         return: a tuple (results, blanks) where
             results is a dict with {key:{monument_id:images-with-that-id-and-key}}
             blanks is the total number of images without a valid monuent_id
@@ -150,6 +122,8 @@ class WLMStatsCruncher(object):
             no._images_per_user      = len(users[user])
             no._uniques_per_user     = sum(users[user].values())
         '''
+        if not lable:
+            lable = key
         if not key in self.indata.values()[0].keys():
             raise MyException('analyseSimple() called with invalid key %s' %key)
         results = {}
@@ -166,9 +140,54 @@ class WLMStatsCruncher(object):
                 results[value][monument_id] = 1
             else:
                 results[value][monument_id] += 1
+        self.outputSimple(lable, results, blanks)
+        
         return results, blanks
     
+    def outputSimple(self,lable,results,blanks):
+        '''simple csv output for data from analyseSimple'''
+        #output
+        f = codecs.open(u'%s%s.csv' %(self.output, lable), 'w', 'utf-8')
+        f.write('#no. %s: %d\n' %(lable, len(results)))
+        f.write('#no. blanks: %d\n' %blanks)
+        f.write('#%s|no. images|no. uniques\n' %(lable))
+        for k, v in results.iteritems():
+            f.write('%s|%d|%d\n' %(k, sum(v.values()), len(v)))
+        f.close()
+        
+    def analyseUsers(self):
+        return self.analyseSimple('uploader','users')
+    
+    def analyseType(self):
+        '''Stats per type, both images and unique objects'''
+        results = {}
+        blanks = 0
+        for k,v in self.indata.iteritems():
+            monument_type, monument_id = v['monument_type'], unicode(v['monument_id'])
+            #skip any entries without valid monument_id or value
+            if any(k in('[]','') for k in (monument_type, monument_id)):
+                blanks +=1
+                continue
+            for m in monument_type:
+                if not m in results.keys():
+                    results[m]={}
+                if not monument_id in results[m].keys():
+                    results[m][monument_id] = 1
+                else:
+                    results[m][monument_id] += 1
+        self.outputSimple('types', results, blanks)
+        
+        return results, blanks
+    
+    def analyseObjects(self, (results, blanks), top=3):
+        '''takes output from analyseType and creates top lists for each type'''
+        for t, v in results.iteritems():
+            sortedV = sortedDict(v)
+            for i in range(0,top):
+                print u'%s: %s %d' %(t, sortedV[i][0], sortedV[i][1])
+        
     def analyseGeo(self):
+        '''Stats per county/muni, both totals and by type, both images and unique objects'''
         results = {}
         blanks = 0
         monument_types = []
@@ -180,7 +199,7 @@ class WLMStatsCruncher(object):
                 #TODO: better that WLMStats outputs empty values
                 blanks +=1
                 continue
-            #skip any entries without valid monument_id
+            #skip any entries without valid monument_id or value
             if any(k in('[]','') for k in (muni, county, monument_type, monument_id)):
                 blanks +=1
                 continue
@@ -237,6 +256,12 @@ class WLMStatsCruncher(object):
         fMuni.close()
         fCounty.close()
         
+        return results, blanks
+
+def sortedDict(ddict):
+    '''turns a dict into a sorted list of tuples'''
+    sorted_ddict = sorted(ddict.iteritems(), key=operator.itemgetter(1), reverse=True)
+    return sorted_ddict
         
 class MyException(Exception):
     pass
