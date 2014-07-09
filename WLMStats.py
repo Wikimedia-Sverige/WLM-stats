@@ -39,7 +39,7 @@ class WLMStats(object):
     
     def loadVariables(self, test):
         '''semi-stable variables which are not project specific'''
-        self.logFilename = u'WLMStats.log'
+        self.logFilename = u'¤WLMStats.log'
         self.heritage_siteurl = 'https://tools.wmflabs.org/heritage/api'
         self.commons_siteurl = 'https://commons.wikimedia.org'
         self.gcmlimit = 250 #Images to process per API request in ImageInfo
@@ -96,8 +96,8 @@ class WLMStats(object):
             self.cApi = wikiApi.WikiApi.setUpApi(user=user, password=getpass(), site=self.commons_siteurl, scriptidentify=scriptidentify, verbose=verbose)
         
         #Create output files (so that any errors occur before the actual run)
+        #TODO cleaner variablenames one only json is outputted
         try:
-            self.fState  = codecs.open(u'%s.state' %self.output, 'w', 'utf-8')
             self.fMonumentsDump = codecs.open(u'%s-monuments.json' %self.output, 'w', 'utf-8')
             self.fMuni   = codecs.open(u'%s-muni.csv' %self.output, 'w', 'utf-8')
             self.fImagesDump = codecs.open(u'%s-images.json' %self.output, 'w', 'utf-8')
@@ -135,13 +135,19 @@ class WLMStats(object):
             if v['per_muni']:
                 self.hApi.getMuniStatistics(table=v['table'], muniStats=muniStatsRaw, debug=False)
         #analyse and output
+        #TODO output as .json and move analysis to Cruncher
         self.outputCSV(self.analyseMuniStatistics(muniStatsRaw), self.fMuni)
         
         #get all heritage_objects from heritage api and repackage to have table+id as key in dict
         #TODO return errors
         monuments = self.getAllMonuments(verbose=verbose, testing=testing)
-        #output to .state file + make it possible to run from this point
-        self.fMonumentsDump.write(ujson.dumps(monuments))
+        #output to .json file + make it possible to run from this point
+        self.fMonumentsDump.write(ujson.dumps({
+            'WLMStatsVersion':self.scriptversion,
+            'type':'monuments',
+            'data':monuments
+            }))
+        #self.fMonumentsDump.write(ujson.dumps(monuments))
         self.fMonumentsDump.close()
         
         #get all images for the relevant categories, parse the image info
@@ -169,8 +175,13 @@ class WLMStats(object):
                     self.images[k]['county'] = monuments[idno]['county']
                     break #no need to check later ids
         
-        #output to .state file + make it possible to run from this point
-        self.fImagesDump.write(ujson.dumps(self.images))
+        #output to .json file + make it possible to run from this point
+        self.fImagesDump.write(ujson.dumps({
+            'WLMStatsVersion':self.scriptversion,
+            'type':'images',
+            'data':self.images
+            }))
+        #self.fImagesDump.write(ujson.dumps(self.images))
         self.fImagesDump.close()
         #tmp
         self.images['_structure'] = {'copyright':False, 'title':False, 'photographer':False, 'created':False, 'uploader':False, 'monument_type':True, 'monument_id':True, 'in_list' :False, 'problematic' :False, 'muni':False, 'county':False}
@@ -344,6 +355,7 @@ class WLMStats(object):
         the main keys.
         '''
         #consider using _structure to tag ints and floats
+        #consider having _structure being a ordered list of {'name':'type'}
         
         #analyse structure and output header
         key_names = data['_structure'].keys()
@@ -379,11 +391,14 @@ class WLMStats(object):
             f.write(u'%s\n' %'|'.join(vals))
         f.close()
 
-#Start of Europeana.py fork
+#Start of Europeana.py fork - some methods may be overly complicated for this purpose
     def getImageInfos(self, maincat, imageInfo={}, verbose=False, testing=False):
         '''given a single category this queries the MediaWiki api for the parsed content of that page
            returns None on success otherwise an error message.'''
         #TODO needs more error handling (based on api replies)
+        #TODO. Can get id and type from category+sortkey (for the commons_cat). WOuld this remove the need for page parsing?
+        ## i.e. scan all commons_cat and store pageid {type:id}. It only allows one id per type and image though
+        ## /w/api.php?action=query&list=categorymembers&format=json&cmtitle=Category%3AProtected%20buildings%20in%20Sweden%20with%20known%20IDs&cmprop=ids%7Ctitle%7Csortkeyprefix&cmlimit=10
         #Allows overriding gcmlimit for testing
         gcmlimit = self.gcmlimit
         if testing:
