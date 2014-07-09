@@ -103,12 +103,12 @@ class WLMStatsCruncher(object):
         self.analyseUsers() #images per user
         self.analyseGeo()   #images per county/muni and type
         self.analyseObjects(   #most popular images per type
-            self.analyseType() #images per type
+            self.analyseType()[0] #images per type
         )
         
         #Done
     
-    def analyseSimple(self, key, lable=None):
+    def analyseSimple(self, key, lable=None, output=True):
         '''analyses how many images (total and unique) there are for each object of a given type/key
         the type must be a simple string
         return: a tuple (results, blanks) where
@@ -129,18 +129,21 @@ class WLMStatsCruncher(object):
         results = {}
         blanks = 0
         for k,v in self.indata.iteritems():
-            value, monument_id = v[key], unicode(v['monument_id'])
+            value, monument_ids = v[key], v['monument_id']
             #skip any entries without valid monument_id or value
-            if any(k in ('[]','') for k in (value, monument_id)):
+            if any(k in ([],'') for k in (value, monument_ids)):
                 blanks +=1
                 continue
             if not value in results.keys():
                 results[value]={}
-            if not monument_id in results[value].keys():
-                results[value][monument_id] = 1
-            else:
-                results[value][monument_id] += 1
-        self.outputSimple(lable, results, blanks)
+            for m_id in monument_ids:
+                monument_id = ';'.join(m_id)
+                if not monument_id in results[value].keys():
+                    results[value][monument_id] = 1
+                else:
+                    results[value][monument_id] += 1
+        if output:
+            self.outputSimple(lable, results, blanks)
         
         return results, blanks
     
@@ -148,6 +151,7 @@ class WLMStatsCruncher(object):
         '''simple csv output for data from analyseSimple'''
         #output
         f = codecs.open(u'%s%s.csv' %(self.output, lable), 'w', 'utf-8')
+        f.write('#Note that the same image can be counted in multiple types/ids\n')
         f.write('#no. %s: %d\n' %(lable, len(results)))
         f.write('#no. blanks: %d\n' %blanks)
         f.write('#%s|no. images|no. uniques\n' %(lable))
@@ -155,36 +159,44 @@ class WLMStatsCruncher(object):
             f.write('%s|%d|%d\n' %(k, sum(v.values()), len(v)))
         f.close()
         
-    def analyseUsers(self):
-        return self.analyseSimple('uploader','users')
+    def analyseUsers(self, output=True):
+        return self.analyseSimple('uploader','users',output=output)
     
-    def analyseType(self):
+    def analyseType(self, output=True):
         '''Stats per type, both images and unique objects'''
         results = {}
         blanks = 0
         for k,v in self.indata.iteritems():
-            monument_type, monument_id = v['monument_type'], unicode(v['monument_id'])
+            monument_type, monument_ids = v['monument_type'], v['monument_id']
             #skip any entries without valid monument_id or value
-            if any(k in('[]','') for k in (monument_type, monument_id)):
+            if any(k in([],'') for k in (monument_type, monument_ids)):
                 blanks +=1
                 continue
             for m in monument_type:
                 if not m in results.keys():
                     results[m]={}
-                if not monument_id in results[m].keys():
-                    results[m][monument_id] = 1
-                else:
-                    results[m][monument_id] += 1
-        self.outputSimple('types', results, blanks)
+                for m_id in monument_ids:
+                    monument_id = ';'.join(m_id)
+                    if not monument_id in results[m].keys():
+                        results[m][monument_id] = 1
+                    else:
+                        results[m][monument_id] += 1
+        if output:
+            self.outputSimple('types', results, blanks)
         
         return results, blanks
     
-    def analyseObjects(self, (results, blanks), top=3):
+    def analyseObjects(self, results, top=3):
         '''takes output from analyseType and creates top lists for each type'''
+        f = codecs.open(u'%stoplists.csv' %self.output, 'w', 'utf-8')
+        f.write('#Note that ties are not resolved\n')
+        f.write('#type|idno|images\n')
         for t, v in results.iteritems():
             sortedV = sortedDict(v)
             for i in range(0,top):
-                print u'%s: %s %d' %(t, sortedV[i][0], sortedV[i][1])
+                f.write(u'%s: %s %d\n' %(t, sortedV[i][0].split(';')[1], sortedV[i][1]))
+        f.close()
+        
         
     def analyseGeo(self):
         '''Stats per county/muni, both totals and by type, both images and unique objects'''
@@ -193,14 +205,14 @@ class WLMStatsCruncher(object):
         monument_types = []
         for k,v in self.indata.iteritems():
             try:
-                muni, county, monument_type, monument_id = v['muni'], v['county'], v['monument_type'], unicode(v['monument_id'])
+                muni, county, monument_type, monument_ids = v['muni'], v['county'], v['monument_type'], v['monument_id']
             except KeyError:
                 #some images don't have county/muni
                 #TODO: better that WLMStats outputs empty values
                 blanks +=1
                 continue
             #skip any entries without valid monument_id or value
-            if any(k in('[]','') for k in (muni, county, monument_type, monument_id)):
+            if any(k in([],'') for k in (muni, county, monument_type, monument_ids)):
                 blanks +=1
                 continue
             if not county in results.keys():
@@ -212,15 +224,17 @@ class WLMStatsCruncher(object):
                     monument_types.append(m)
                 if not m in results[county][muni].keys():
                     results[county][muni][m]={}
-                if not monument_id in results[county][muni][m].keys():
-                    results[county][muni][m][monument_id] = 1
-                else:
-                    results[county][muni][m][monument_id] += 1
+                for m_id in monument_ids:
+                    monument_id = ';'.join(m_id)
+                    if not monument_id in results[county][muni][m].keys():
+                        results[county][muni][m][monument_id] = 1
+                    else:
+                        results[county][muni][m][monument_id] += 1
         
         #output
         fMuni = codecs.open(u'%sgeo-muni.csv' %self.output, 'w', 'utf-8')
         fCounty = codecs.open(u'%sgeo-county.csv' %self.output, 'w', 'utf-8')
-        header = u'#Note that the same image can be counted in multiple types\n#no. blanks: %d' %blanks
+        header = u'#Note that the same image can be counted in multiple types/ids\n#no. blanks: %d' %blanks
         #for each county/muni we want overall/by_type totals and uniques
         by_type_row=''
         for t in monument_types:
