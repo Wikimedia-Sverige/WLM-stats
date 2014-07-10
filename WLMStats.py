@@ -145,7 +145,8 @@ class WLMStats(object):
         self.fMonumentsDump.write(ujson.dumps({
             'WLMStatsVersion':self.scriptversion,
             'type':'monuments',
-            'data':monuments
+            'data':monuments,
+            'settings':self.settings
             }))
         #self.fMonumentsDump.write(ujson.dumps(monuments))
         self.fMonumentsDump.close()
@@ -180,6 +181,7 @@ class WLMStats(object):
             'WLMStatsVersion':self.scriptversion,
             'type':'images',
             'data':self.images
+            'settings':self.settings
             }))
         #self.fImagesDump.write(ujson.dumps(self.images))
         self.fImagesDump.close()
