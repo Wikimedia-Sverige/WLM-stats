@@ -23,9 +23,9 @@ import operator #only used by sortedDict
 class WLMStatsCruncher(object):
     def versionInfo(self):
         '''Version specific variables'''
-        self.scriptversion = u'0.1'
+        self.scriptversion = u'0.2'
         self.scriptname = u'WLM_Statistics_Cruncher'
-        self.WLMStatsVersion = u'0.1' # the version of WLMStats for which the cruncher was designed
+        self.WLMStatsVersion = u'0.2' # the version of WLMStats for which the cruncher was designed
 
     def loadVariables(self, test):
         '''semi-stable variables which are not project specific'''

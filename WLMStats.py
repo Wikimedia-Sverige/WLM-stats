@@ -32,7 +32,7 @@ import re #only used for wikitext parsing
 class WLMStats(object):
     def versionInfo(self):
         '''Version specific variables'''
-        self.scriptversion = u'0.1'
+        self.scriptversion = u'0.2'
         self.scriptname = u'WLM_Statistics'
         self.infoTemplate = [u'Template:Information',] #supported info templates - based on what is suppported by parseImageInfo
         self.commonsMetadataExtension = 1.2 # the version of the extention for which the script was designed
@@ -180,7 +180,7 @@ class WLMStats(object):
         self.fImagesDump.write(ujson.dumps({
             'WLMStatsVersion':self.scriptversion,
             'type':'images',
-            'data':self.images
+            'data':self.images,
             'settings':self.settings
             }))
         #self.fImagesDump.write(ujson.dumps(self.images))
