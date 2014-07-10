@@ -9,18 +9,16 @@
 # a reboot of the WLM stats-getter (WLM2011, 2011-09-30)
 # based heavily on the EuropeanaHarvest
 #
-## Notes that should live elsewhere
-#settings file
-##{
-##  "bbr": {
-##	"table"           : "se-bbr", #table name in heritage (without lang code)
-##	"defaultWPCat"    : [u"Listor över fornminnen i Sverige per kommun"], #list of kategories on sv.wp containing the lists
-##  "commons_cat"     : "Protected buildings in Sweden with known IDs",   #tracking category on commons
-##	"commons_template": "BBR",  #template on commons indicating an image is of this type
-##	"url_prefix"      : "http://kulturarvsdata.se/raa/fmi/html/",  #url pattern prefixing the id (if there is a postfix or the id is modified (e.g. whitespace removed) then this needs to be expanded)
-##	"per_muni"        : true,     #false if objects are not sorted by municipality (e.g. se-ship)
-##  "url_promised"    : true      #false if external link cannot be used for ALL objects
-##  },
+# TODO
+#   Move muni analysis to cruncher
+#   Eliminate csv outputs
+#   Clean up output names
+#
+# TODO - maybe
+#   Retrieve info for objects not in lists
+#       Would require lookup against K-samsök etc.
+#   Retrieve information about type (kyrka, byggnad, fornminnestyp)
+#       Would require going trhough lists, and K-samsök
 
 import codecs, ujson
 import datetime #for timestamps  in log

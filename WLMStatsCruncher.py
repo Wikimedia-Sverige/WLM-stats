@@ -10,10 +10,8 @@
 # designed to crunch the data from WLMStats.py
 #
 #
-#Random notes
-#Ladda json:
-#Kan inte göra en initial "unik" sökning. Då år, uppladdare etc. skiljer sig.
-#in images [u'monument_id', u'muni', u'copyright', u'title', u'problematic', u'created', u'in_list', u'county', u'uploader', u'photographer', u'monument_type']
+# TODO
+#   Add title to any output which includes monument_id?
 
 import codecs, ujson
 import datetime #for timestamps  in log
