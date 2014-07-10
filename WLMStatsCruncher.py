@@ -31,7 +31,7 @@ class WLMStatsCruncher(object):
         '''semi-stable variables which are not project specific'''
         self.logFilename = u'¤WLMStatsCruncher.log'
         self.output = "analysis/"
-        self.reqKeys = [u'type', u'data', u'WLMStatsVersion']
+        self.reqKeys = [u'type', u'data', u'WLMStatsVersion'] #add settings
         self.supportedTypes = ['images',]
         
     def __init__(self, filename, verbose=False, test=False):
@@ -102,9 +102,11 @@ class WLMStatsCruncher(object):
         
         self.analyseUsers() #images per user
         self.analyseGeo()   #images per county/muni and type
-        self.analyseObjects(   #most popular images per type
-            self.analyseType()[0] #images per type
-        )
+        self.analyseType()  #images per type
+        self.analyseObjects(top=3) #most popular images per type
+        self.analyseLicense() #which licenses were used
+        self.analyseDates()   #when were the images created
+        self.analyseListStatus() #are the imags in lists?
         
         #Done
     
@@ -161,6 +163,42 @@ class WLMStatsCruncher(object):
         
     def analyseUsers(self, output=True):
         return self.analyseSimple('uploader','users',output=output)
+
+    def analyseLicense(self, output=True):
+        return self.analyseSimple('copyright','licenses',output=output)
+        
+    def analyseListStatus(self, output=True):
+        results = {}
+        blanks = 0
+        for k,v in self.indata.iteritems():
+            listStatus, monument_type, monument_ids = v['in_list'], v['monument_type'], v['monument_id']
+            #skip any entries without valid monument_id or value
+            if any(k in([],'') for k in (listStatus, monument_type, monument_ids)):
+                blanks +=1
+                continue
+            for m in monument_type:
+                if not m in results.keys():
+                    results[m]={}
+                if not listStatus in results[m].keys():
+                    results[m][listStatus]={}
+                for m_id in monument_ids:
+                    monument_id = ';'.join(m_id)
+                    if not monument_id in results[m].keys():
+                        results[m][listStatus][monument_id] = 1
+                    else:
+                        results[m][listStatus][monument_id] += 1
+        if output:
+            #output
+            f = codecs.open(u'%slistStatus.csv' %self.output, 'w', 'utf-8')
+            f.write('#Note that the same image can be counted in multiple types/ids\n')
+            f.write('#no. blanks: %d\n' %blanks)
+            f.write('#type|listStatus|no. images|no. uniques\n')
+            for typ in results.keys():
+                for k, v in results[typ].iteritems():
+                    f.write('%s|%s|%d|%d\n' %(typ, k, sum(v.values()), len(v)))
+            f.close()
+        
+        return results, blanks
     
     def analyseType(self, output=True):
         '''Stats per type, both images and unique objects'''
@@ -186,8 +224,11 @@ class WLMStatsCruncher(object):
         
         return results, blanks
     
-    def analyseObjects(self, results, top=3):
+    def analyseObjects(self, top=3, output=True):
+        results  = self.analyseType()[0]
         '''takes output from analyseType and creates top lists for each type'''
+        if not output:
+            return None
         f = codecs.open(u'%stoplists.csv' %self.output, 'w', 'utf-8')
         f.write('#Note that ties are not resolved\n')
         f.write('#type|idno|images\n')
@@ -196,9 +237,55 @@ class WLMStatsCruncher(object):
             for i in range(0,top):
                 f.write(u'%s|%s|%d\n' %(t, sortedV[i][0].split(';')[1], sortedV[i][1]))
         f.close()
+    
+    def analyseDates(self, output=True):
+        #TODO - this should not be hardcoded
+        self.settingDate = '2013-09' #should be gotten from source file
+        wlm_date = (int(self.settingDate[:4]), int(self.settingDate[5:]))
+        #Spcial bins
+        current = u'current (%s)' %self.settingDate
+        since_last = u'since_last (%d-%s – %s)' %(wlm_date[0]-1, str(wlm_date[1]).zfill(2), current)
+        rest_of_last_year = u'rest_of_last_year (%d – %d-%s)' %(wlm_date[0]-1, wlm_date[0]-1,str(wlm_date[1]).zfill(2))
+        results = {current:0, since_last:0, rest_of_last_year:0}
+        blanks = 0
+        for k,v in self.indata.iteritems():
+            date_raw = v['created']
+            #skip any entries without valid monument_id or value
+            if date_raw == '' or len(date_raw)<4:
+                blanks +=1
+                continue
+            #prepare dates
+            month = 0
+            if len(date_raw) >= 7:
+                month = int(date_raw[5:7])
+            date = (int(date_raw[:4]),month)
+            
+            #binning
+            if date == wlm_date:
+                #the current competition
+                results[current] += 1
+            elif (date[0] == wlm_date[0] and date[1] < wlm_date[1]) or (date[0] == wlm_date[0]-1 and date[1] > wlm_date[1]):
+                #since last competition
+                results[since_last] += 1
+            elif date[0] == wlm_date[0]-1:
+                #the rest of that year
+                results[rest_of_last_year] += 1
+            else:
+                if not str(date[0]) in results.keys():
+                    results[str(date[0])] = 1
+                else:
+                    results[str(date[0])] += 1
+        if output:
+            #to simple to be outputSimple()
+            f = codecs.open(u'%sdates.csv' %self.output, 'w', 'utf-8')
+            f.write('#no. dates: %d\n' %len(results))
+            f.write('#no. blanks: %d\n' %blanks)
+            f.write('#dates|no. images\n')
+            for k, v in results.iteritems():
+                f.write('%s|%d\n' %(k, v))
+            f.close()
         
-        
-    def analyseGeo(self):
+    def analyseGeo(self, output=True):
         '''Stats per county/muni, both totals and by type, both images and unique objects'''
         results = {}
         blanks = 0
@@ -230,7 +317,9 @@ class WLMStatsCruncher(object):
                         results[county][muni][m][monument_id] = 1
                     else:
                         results[county][muni][m][monument_id] += 1
-        
+        #leave now if no output is needed
+        if not output:
+            return results, blanks
         #output
         fMuni = codecs.open(u'%sgeo-muni.csv' %self.output, 'w', 'utf-8')
         fCounty = codecs.open(u'%sgeo-county.csv' %self.output, 'w', 'utf-8')
