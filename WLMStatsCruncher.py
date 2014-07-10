@@ -31,7 +31,7 @@ class WLMStatsCruncher(object):
         '''semi-stable variables which are not project specific'''
         self.logFilename = u'¤WLMStatsCruncher.log'
         self.output = "analysis/"
-        self.reqKeys = [u'type', u'data', u'WLMStatsVersion'] #add settings
+        self.reqKeys = [u'type', u'data', u'WLMStatsVersion', u'settings']
         self.supportedTypes = ['images',]
         
     def __init__(self, filename, verbose=False, test=False):
@@ -60,6 +60,8 @@ class WLMStatsCruncher(object):
             if not self.indataType in self.supportedTypes:
                 raise MyException(u'Wrong indataType. Found: %s' %jIn['type'])
             self.indata = jIn['data'] 
+            #load date
+            self.settingDate = jIn['settings']['date'] #should be gotten from source file
         except MyException, e:
             if verbose:
                 print u'Error reading input file: %s\n' %e
@@ -239,8 +241,6 @@ class WLMStatsCruncher(object):
         f.close()
     
     def analyseDates(self, output=True):
-        #TODO - this should not be hardcoded
-        self.settingDate = '2013-09' #should be gotten from source file
         wlm_date = (int(self.settingDate[:4]), int(self.settingDate[5:]))
         #Spcial bins
         current = u'current (%s)' %self.settingDate
