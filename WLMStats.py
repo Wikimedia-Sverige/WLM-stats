@@ -9,12 +9,14 @@
 # a reboot of the WLM stats-getter (WLM2011, 2011-09-30)
 # based heavily on the EuropeanaHarvest
 #
-# TODO
+# @TODO
 #   Move muni analysis to cruncher
 #   Eliminate csv outputs
 #   Clean up output names
+#   Replace _structure by from Collections import SortedDict as SortedDict
+#   dataDicts as json see cruncher 
 #
-# TODO - maybe
+# @TODO - maybe
 #   Retrieve info for objects not in lists
 #       Would require lookup against K-samsök etc.
 #   Retrieve information about type (kyrka, byggnad, fornminnestyp)

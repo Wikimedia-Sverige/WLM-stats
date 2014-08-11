@@ -12,6 +12,12 @@
 #
 # TODO
 #   Add title to any output which includes monument_id?
+#   redo dataDicts as json, loaded during init (json already exists)
+#      Load and store as dataDicts
+#        required changes: dataDicts.muni_code2Name[muni.lstrip('0')] -> dataDicts['muni_code2Name'][muni.lstrip('0')]
+#      or individual dicts
+#        required changes: dataDicts.muni_code2Name[muni.lstrip('0')] -> muni_code2Name[muni.lstrip('0')]
+#      also remove import and dataDicts.py
 
 import codecs, ujson
 import datetime #for timestamps  in log
