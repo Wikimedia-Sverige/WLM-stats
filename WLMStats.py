@@ -14,7 +14,6 @@
 #   Eliminate csv outputs
 #   Clean up output names
 #   Replace _structure by from Collections import SortedDict as SortedDict
-#   dataDicts as json see cruncher 
 #
 # @TODO - maybe
 #   Retrieve info for objects not in lists
@@ -26,7 +25,6 @@ import codecs, ujson
 import datetime #for timestamps  in log
 import WikiApi as wikiApi
 import HeritageApi as heritageApi
-import dataDicts #redo as json?
 import re #only used for wikitext parsing
 
 class WLMStats(object):
@@ -66,6 +64,15 @@ class WLMStats(object):
             exit(1)
         except (ValueError, KeyError), e:
             return u'Error processing settings file as the expected json. Are you sure it is still valid?: %s' %e
+            exit(1)
+        
+        #load dataDict file
+        try:
+            f = codecs.open('dataDicts.json','r','utf8')
+            self.dataDicts = ujson.load(f)
+            f.close()
+        except IOError, e:
+            return u'Error opening dataDicts file: %s' %e
             exit(1)
 
     def __init__(self, verbose=False, test=False):
@@ -172,7 +179,7 @@ class WLMStats(object):
             for idno in idnos:
                 if idno in monuments.keys():
                     self.images[k]['in_list'] = True
-                    self.images[k]['muni'] = dataDicts.muni_name2code[monuments[idno]['muni']].zfill(4) if monuments[idno]['muni'] in dataDicts.muni_name2code.keys() else monuments[idno]['muni']
+                    self.images[k]['muni'] = self.dataDicts['muni_name2code'][monuments[idno]['muni']].zfill(4) if monuments[idno]['muni'] in self.dataDicts['muni_name2code'].keys() else monuments[idno]['muni']
                     self.images[k]['county'] = monuments[idno]['county']
                     break #no need to check later ids
         
@@ -314,7 +321,7 @@ class WLMStats(object):
         muniStats = {}
         for k, v in muniStatsRaw.iteritems():
             muniStats[k] = {
-                'muni_code': dataDicts.muni_name2code[k].zfill(4) if k in dataDicts.muni_name2code.keys() else None,
+                'muni_code': self.dataDicts['muni_name2code'][k].zfill(4) if k in self.dataDicts['muni_name2code'].keys() else None,
                 'muni_name': k
                 }
             aggregate = {}

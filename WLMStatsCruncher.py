@@ -10,18 +10,12 @@
 # designed to crunch the data from WLMStats.py
 #
 #
-# TODO
+# @TODO
 #   Add title to any output which includes monument_id?
-#   redo dataDicts as json, loaded during init (json already exists)
-#      Load and store as dataDicts
-#        required changes: dataDicts.muni_code2Name[muni.lstrip('0')] -> dataDicts['muni_code2Name'][muni.lstrip('0')]
-#      or individual dicts
-#        required changes: dataDicts.muni_code2Name[muni.lstrip('0')] -> muni_code2Name[muni.lstrip('0')]
-#      also remove import and dataDicts.py
+#
 
 import codecs, ujson
 import datetime #for timestamps  in log
-import dataDicts #redo as json?
 import operator #only used by sortedDict
 
 class WLMStatsCruncher(object):
@@ -37,6 +31,15 @@ class WLMStatsCruncher(object):
         self.output = "analysis/"
         self.reqKeys = [u'type', u'data', u'WLMStatsVersion', u'settings']
         self.supportedTypes = ['images',]
+        
+        #load dataDict file
+        try:
+            f = codecs.open('dataDicts.json','r','utf8')
+            self.dataDicts = ujson.load(f)
+            f.close()
+        except IOError, e:
+            return u'Error opening dataDicts file: %s' %e
+            exit(1)
         
     def __init__(self, filename, verbose=False, test=False):
         '''Sets up environment, loads data file, triggers run/test
@@ -353,12 +356,12 @@ class WLMStatsCruncher(object):
                     by_type_row += '|%d|%d' %(m_images[t], m_uniques[t])
                     c_images[t] += m_images[t]
                     c_uniques[t] += m_uniques[t]
-                fMuni.write('%s|%s|%d|%d%s\n' % (muni, dataDicts.muni_code2Name[muni.lstrip('0')], sum(m_images.values()), sum(m_uniques.values()), by_type_row))
+                fMuni.write('%s|%s|%d|%d%s\n' % (muni, self.dataDicts['muni_code2Name'][muni.lstrip('0')], sum(m_images.values()), sum(m_uniques.values()), by_type_row))
             #munis done
             by_type_row = ''
             for t in monument_types:
                 by_type_row += '|%d|%d' %(c_images[t], c_uniques[t])
-            fCounty.write('%s|%s|%d|%d%s\n' % (county, dataDicts.county_code2Name[county[len('se-'):].upper()], sum(c_images.values()), sum(c_uniques.values()), by_type_row))
+            fCounty.write('%s|%s|%d|%d%s\n' % (county, self.dataDicts['county_code2Name'][county[len('se-'):].upper()], sum(c_images.values()), sum(c_uniques.values()), by_type_row))
         #counties done
         fMuni.close()
         fCounty.close()
@@ -376,7 +379,7 @@ class MyException(Exception):
 if __name__ == '__main__':
     import sys
     usage = '''Usage: python Cruncher.py infile option
-\tfile: the json indata file
+\tfile: the json indata file (the *-images.json output of WlmStats)
 \toption (optional): can be set to:
 \t\tverbose:\t toggles on verbose mode with additional output to the terminal
 \t\ttest:\t\t toggles on testing (a verbose and limited run)

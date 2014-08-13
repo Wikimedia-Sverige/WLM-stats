@@ -1,1 +1,0 @@
-../ODOK/tools/dataDicts.py
