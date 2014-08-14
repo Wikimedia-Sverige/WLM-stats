@@ -10,10 +10,12 @@
 # based heavily on the EuropeanaHarvest
 #
 # @TODO
+#   Enable settings.json to live anywhere
 #   Move muni analysis to cruncher
 #   Eliminate csv outputs
 #   Clean up output names
 #   Replace _structure by from Collections import SortedDict as SortedDict
+#       or eliminate it as part of csv elimination
 #
 # @TODO - maybe
 #   Retrieve info for objects not in lists
@@ -41,18 +43,18 @@ class WLMStats(object):
         self.heritage_siteurl = 'https://tools.wmflabs.org/heritage/api'
         self.commons_siteurl = 'https://commons.wikimedia.org'
         self.gcmlimit = 250 #Images to process per API request in ImageInfo
-        self.output = "output/wlm-se"
+        self.output = "output/"
         self.settings_file = u'settings.json'
         self._test_gcmlimit = 5
         self._test_limit = 15
         
         #distingusih testdata
         if test:
-            self.output += u'.test'
+            self.output += u'test.'
             self.settings_file = u'settings.test.json'
         
         #load settings file
-        requiredKeys = ['types', 'cats'] #keys which are explicitly called later
+        requiredKeys = ['types', 'cats', 'date', 'identifier'] #keys which are explicitly called later
         try:
             f = codecs.open(self.settings_file, 'r', 'utf-8')
             self.settings = ujson.load(f)
@@ -65,6 +67,9 @@ class WLMStats(object):
         except (ValueError, KeyError), e:
             return u'Error processing settings file as the expected json. Are you sure it is still valid?: %s' %e
             exit(1)
+        
+        #lable output with identifier
+        self.output += self.settings['identifier']
         
         #load dataDict file
         try:
@@ -105,10 +110,10 @@ class WLMStats(object):
         #Create output files (so that any errors occur before the actual run)
         #TODO cleaner variablenames one only json is outputted
         try:
-            self.fMonumentsDump = codecs.open(u'%s-monuments.json' %self.output, 'w', 'utf-8')
-            self.fMuni   = codecs.open(u'%s-muni.csv' %self.output, 'w', 'utf-8')
-            self.fImagesDump = codecs.open(u'%s-images.json' %self.output, 'w', 'utf-8')
-            self.fImages = codecs.open(u'%s-images.csv' %self.output, 'w', 'utf-8')
+            self.fMonumentsDump = codecs.open(u'%s_monuments.json' %self.output, 'w', 'utf-8')
+            self.fMuni   = codecs.open(u'%s_muni.csv' %self.output, 'w', 'utf-8')
+            self.fImagesDump = codecs.open(u'%s_images.json' %self.output, 'w', 'utf-8')
+            self.fImages = codecs.open(u'%s_images.csv' %self.output, 'w', 'utf-8')
         except IOError, e:
             self.log.write(u'Error creating output files: %s\n' %e)
             exit(1)

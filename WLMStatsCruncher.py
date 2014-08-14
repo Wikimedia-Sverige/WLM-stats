@@ -68,7 +68,8 @@ class WLMStatsCruncher(object):
                 raise MyException(u'Wrong indataType. Found: %s' %jIn['type'])
             self.indata = jIn['data'] 
             #load date
-            self.settingDate = jIn['settings']['date'] #should be gotten from source file
+            self.settingDate = jIn['settings']['date']   #should be gotten from source file
+            self.output += jIn['settings']['identifier'] #from source settings file @NOTE does not take test. into account
         except MyException, e:
             if verbose:
                 print u'Error reading input file: %s\n' %e
@@ -78,7 +79,7 @@ class WLMStatsCruncher(object):
         self.log.write(u'-----------------------\n%s: Successfully started %srun.\n' %(datetime.datetime.utcnow(), 'test ' if test else ''))
         
         try:
-            self.fCrunch  = codecs.open(u'%s.json' %self.output, 'w', 'utf-8')
+            self.fCrunch  = codecs.open(u'%s_crunched.json' %self.output, 'w', 'utf-8')
         except IOError, e:
             self.log.write(u'Error creating output files: %s\n' %e)
             exit(1)
@@ -161,7 +162,7 @@ class WLMStatsCruncher(object):
     def outputSimple(self,lable,results,blanks):
         '''simple csv output for data from analyseSimple'''
         #output
-        f = codecs.open(u'%s%s.csv' %(self.output, lable), 'w', 'utf-8')
+        f = codecs.open(u'%s_%s.csv' %(self.output, lable), 'w', 'utf-8')
         f.write('#Note that the same image can be counted in multiple types/ids\n')
         f.write('#no. %s: %d\n' %(lable, len(results)))
         f.write('#no. blanks: %d\n' %blanks)
@@ -198,7 +199,7 @@ class WLMStatsCruncher(object):
                         results[m][listStatus][monument_id] += 1
         if output:
             #output
-            f = codecs.open(u'%slistStatus.csv' %self.output, 'w', 'utf-8')
+            f = codecs.open(u'%s_listStatus.csv' %self.output, 'w', 'utf-8')
             f.write('#Note that the same image can be counted in multiple types/ids\n')
             f.write('#no. blanks: %d\n' %blanks)
             f.write('#type|listStatus|no. images|no. uniques\n')
@@ -238,7 +239,7 @@ class WLMStatsCruncher(object):
         '''takes output from analyseType and creates top lists for each type'''
         if not output:
             return None
-        f = codecs.open(u'%stoplists.csv' %self.output, 'w', 'utf-8')
+        f = codecs.open(u'%s_toplists.csv' %self.output, 'w', 'utf-8')
         f.write('#Note that ties are not resolved\n')
         f.write('#type|idno|images\n')
         for t, v in results.iteritems():
@@ -284,7 +285,7 @@ class WLMStatsCruncher(object):
                     results[str(date[0])] += 1
         if output:
             #to simple to be outputSimple()
-            f = codecs.open(u'%sdates.csv' %self.output, 'w', 'utf-8')
+            f = codecs.open(u'%s_dates.csv' %self.output, 'w', 'utf-8')
             f.write('#no. dates: %d\n' %len(results))
             f.write('#no. blanks: %d\n' %blanks)
             f.write('#dates|no. images\n')
@@ -328,8 +329,8 @@ class WLMStatsCruncher(object):
         if not output:
             return results, blanks
         #output
-        fMuni = codecs.open(u'%sgeo-muni.csv' %self.output, 'w', 'utf-8')
-        fCounty = codecs.open(u'%sgeo-county.csv' %self.output, 'w', 'utf-8')
+        fMuni = codecs.open(u'%s_geo-muni.csv' %self.output, 'w', 'utf-8')
+        fCounty = codecs.open(u'%s_geo-county.csv' %self.output, 'w', 'utf-8')
         header = u'#Note that the same image can be counted in multiple types/ids\n#no. blanks: %d' %blanks
         #for each county/muni we want overall/by_type totals and uniques
         by_type_row=''
