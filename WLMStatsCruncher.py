@@ -384,7 +384,7 @@ if __name__ == '__main__':
 \toption (optional): can be set to:
 \t\tverbose:\t toggles on verbose mode with additional output to the terminal
 \t\ttest:\t\t toggles on testing (a verbose and limited run)
-example: python WLMStatsCruncher.py "./output/wlm-se.test-images.json" verbose
+example: python WLMStatsCruncher.py ./output/wlm-se.test_images.json verbose
 '''
     argv = sys.argv[1:]
     if len(argv) == 1:
