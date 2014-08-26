@@ -1,0 +1,11 @@
+A guide to the analysis files
+: *_dates.csv	-	Looks at the dates during which the images were uploaded
+: *_listStatus.csv	-	Looks at how many of the photographed objects were not in the lists
+: *_geo-county.csv	-	Looks at images, and unique objects by type and County
+: *_geo-muni.csv	-	Looks at images, and unique objects by type and Municipality
+: *_toplists.csv	-	Looks at the top photographed objects of each type
+: *_types.csv	-	Looks at no. images/uniques per type
+: *_usage.csv	-	Looks at the ctual usage of the competition images in the lists/database
+: *_licenses.csv	-	Looks at the choice of license for the images
+: *_users.csv	-	Looks at the uploaders of the images. No of. images/objects/edits, date of registration, gender and if email eas activated
+
