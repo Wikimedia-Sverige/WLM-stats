@@ -29,6 +29,7 @@ class WLMStatsCruncher(object):
         '''semi-stable variables which are not project specific'''
         self.logFilename = u'¤WLMStatsCruncher.log'
         self.output = "analysis/"
+        self.commons_siteurl = 'https://commons.wikimedia.org'
         self.reqKeys = [u'type', u'data', u'WLMStatsVersion', u'settings']
         self.supportedTypes = ['images',]
         
@@ -110,7 +111,7 @@ class WLMStatsCruncher(object):
         with each bit and then outputting it.
         Checks self.indataType to decide which list to follow'''
         
-        self.analyseUsers() #images per user
+        self.analyseUsers(detailed=True) #images per user
         self.analyseGeo()   #images per county/muni and type
         self.analyseType()  #images per type
         self.analyseObjects(top=3) #most popular images per type
@@ -125,7 +126,7 @@ class WLMStatsCruncher(object):
         the type must be a simple string
         return: a tuple (results, blanks) where
             results is a dict with {key:{monument_id:images-with-that-id-and-key}}
-            blanks is the total number of images without a valid monuent_id
+            blanks is the total number of images without a valid key (e.g. monument_id, user)
         raises: MyException if key not found
         
         to use:
@@ -170,9 +171,26 @@ class WLMStatsCruncher(object):
         for k, v in results.iteritems():
             f.write('%s|%d|%d\n' %(k, sum(v.values()), len(v)))
         f.close()
+    
+    def analyseUsers(self, output=True, detailed=False):
+        if not detailed:
+            return self.analyseSimple('uploader','users',output=output)
+            
+        #else
+        results, blanks = self.analyseSimple('uploader','users',output=output)
+        userinfo = self.getUserInfo(results.keys())
         
-    def analyseUsers(self, output=True):
-        return self.analyseSimple('uploader','users',output=output)
+        #output
+        if output:
+            f = codecs.open(u'%s_users.csv' %self.output, 'w', 'utf-8')
+            f.write('#no. users: %d\n' %len(results))
+            f.write('#no. blanks: %d\n' %blanks)
+            f.write('#user|no. images|no. uniques|registration|edits|gender|emailable\n')
+            for k, v in results.iteritems():
+                f.write('%s|%d|%d|%s|%s|%s|%s\n' %(k, sum(v.values()), len(v), userinfo[k]['reg'], userinfo[k]['edits'], userinfo[k]['gender'], userinfo[k]['emailable']))
+            f.close()
+        
+        return results, blanks, userinfo
 
     def analyseLicense(self, output=True):
         return self.analyseSimple('copyright','licenses',output=output)
@@ -368,6 +386,50 @@ class WLMStatsCruncher(object):
         fCounty.close()
         
         return results, blanks
+        
+    def getUserInfo(self, users, verbose=False):
+        '''
+        get aditional info about the uploaders
+        this requires the wikiapi
+        '''
+        #TODO: Move to wikiApi
+        import WikiApi as wikiApi
+        maxUsers = 50
+        #Look for config file and connect to api
+        scriptidentify = u'%s/%s' %(self.scriptname,self.scriptversion)
+        try:
+            import config
+            cApi = wikiApi.WikiApi.setUpApi(user=config.user, password=config.password, site=self.commons_siteurl, scriptidentify=scriptidentify, verbose=verbose) 
+        except ImportError:
+            from getpass import getpass #not needed if config file exists
+            user=getpass(u'Username:')
+            cApi = wikiApi.WikiApi.setUpApi(user=user, password=getpass(), site=self.commons_siteurl, scriptidentify=scriptidentify, verbose=verbose)
+        
+        #query
+        d={}
+        
+        #query allows a maximum of maxUsers per go
+        while len(users) > 0:
+            batch = users[:maxUsers]
+            users = users[maxUsers:]
+            
+            jsonr = cApi.httpGET("query", [('list', 'users'),
+                                           ('usprop', 'editcount|registration|gender|emailable'),
+                                           ('ususers', '|'.join(batch).encode('utf-8'))
+                                          ])
+            #should test for valid response here
+            for user in jsonr['query']['users']:
+                if 'missing' in user.keys() or 'invalid' in user.keys():
+                    d[user['name']] = {'reg':'-', 'edits':'-', 'gender':'-', 'emailable':'-'}
+                    continue
+                d[user['name']] = {'reg':user['registration'],'edits':user['editcount'],'gender':user['gender'],'emailable':False}
+                if user['registration']: #this can be null
+                    #if a date exists then crop to year-month
+                    d[user['name']]['reg'] = user['registration'][:7]
+                if 'emailable' in user.keys():
+                    d[user['name']]['emailable'] = True
+        #done
+        return d
 
 def sortedDict(ddict):
     '''turns a dict into a sorted list of tuples'''
