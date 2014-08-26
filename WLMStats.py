@@ -551,6 +551,9 @@ class WLMStats(object):
         else: #no indication of creator
             return (False, u'%s did not have any information about the creator' %title)
         
+        #For some reason '&' can get returned as %26
+        obj['uploader'] = obj['uploader'].replace('%26','&')
+        
         ## Deal with licenses
         if licenseurl:
             if licenseurl.startswith(u'http://creativecommons.org/licenses/'):
