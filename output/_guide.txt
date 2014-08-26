@@ -1,0 +1,7 @@
+A guide to the output files
+: *_images.csv	-	legacy
+: *_muni.csv	-	analysis of municipality coverage statistics, will be moved to Cruncher
+: *_images.json	-	A dictionary of all the images uploaded in the competition, using pageid as key
+: *_muni.json	-	raw data from _muni.csv, for use in cruncher
+: *_monuments.json	-	A dictionary of all the monuments in the competition (from HeritageApi), using "(u'type', u'id')" as key
+
