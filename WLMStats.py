@@ -10,7 +10,6 @@
 # based heavily on the EuropeanaHarvest
 #
 # @TODO
-#   Enable settings.json to live anywhere
 #   Move muni analysis to cruncher
 #   Eliminate csv outputs
 #   Clean up output names
@@ -37,14 +36,14 @@ class WLMStats(object):
         self.infoTemplate = [u'Template:Information',] #supported info templates - based on what is suppported by parseImageInfo
         self.commonsMetadataExtension = 1.2 # the version of the extention for which the script was designed
     
-    def loadVariables(self, test):
+    def loadVariables(self, infile, test):
         '''semi-stable variables which are not project specific'''
         self.logFilename = u'¤WLMStats.log'
         self.heritage_siteurl = 'https://tools.wmflabs.org/heritage/api'
         self.commons_siteurl = 'https://commons.wikimedia.org'
         self.gcmlimit = 250 #Images to process per API request in ImageInfo
         self.output = "output/"
-        self.settings_file = u'settings.json'
+        self.settings_file = infile
         self._test_gcmlimit = 5
         self._test_limit = 15
         
@@ -80,12 +79,12 @@ class WLMStats(object):
             return u'Error opening dataDicts file: %s' %e
             exit(1)
 
-    def __init__(self, verbose=False, test=False):
+    def __init__(self, infile, verbose=False, test=False):
         '''Sets up environment, loads project file, triggers run/test
            Requires no parameters:
         '''
         self.versionInfo()
-        varErrors = self.loadVariables(test)
+        varErrors = self.loadVariables(infile, test)
         self.log = codecs.open(self.logFilename, 'a', 'utf-8')
         if varErrors:
             self.log.write(u'%s\n' %varErrors)
@@ -707,18 +706,19 @@ class MyException(Exception):
 
 if __name__ == '__main__':
     import sys
-    usage = '''Usage: python WLMStats.py option
+    usage = '''Usage: python WLMStats.py infile option
+\tinfile must be a json settings file
 \toption (optional): can be set to:
 \t\tverbose:\t toggles on verbose mode with additional output to the terminal
 \t\ttest:\t\t toggles on testing (a verbose and limited run)'''
     argv = sys.argv[1:]
-    if len(argv) == 0:
-        WLMStats()
-    elif len(argv) == 1:
-        if argv[0] == 'test':
-            WLMStats(test=True)
-        elif argv[0] == 'verbose':
-            WLMStats(verbose=True)
+    if len(argv) == 1:
+        WLMStats(argv[0])
+    elif len(argv) == 2:
+        if argv[1] == 'test':
+            WLMStats(argv[0], test=True)
+        elif argv[1] == 'verbose':
+            WLMStats(argv[0], verbose=True)
         else:
             print usage
     else:
