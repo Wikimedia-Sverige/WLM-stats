@@ -12,6 +12,8 @@
 #
 # @TODO
 #   Add title to any output which includes monument_id?
+#   Add support for muni analysis
+#   Add support for monument analysis
 #
 
 import codecs, ujson
@@ -21,9 +23,9 @@ import operator #only used by sortedDict
 class WLMStatsCruncher(object):
     def versionInfo(self):
         '''Version specific variables'''
-        self.scriptversion = u'0.2'
+        self.scriptversion = u'0.21'
         self.scriptname = u'WLM_Statistics_Cruncher'
-        self.WLMStatsVersion = u'0.2' # the version of WLMStats for which the cruncher was designed
+        self.WLMStatsVersion = u'0.21' # the version of WLMStats for which the cruncher was designed
 
     def loadVariables(self, test):
         '''semi-stable variables which are not project specific'''
@@ -44,7 +46,7 @@ class WLMStatsCruncher(object):
         
     def __init__(self, filename, verbose=False, test=False):
         '''Sets up environment, loads data file, triggers run/test
-           :param filename: the *-images.json output of WlmStats
+           :param filename: the *_images.json output of WlmStats
         '''
         self.versionInfo()
         varErrors = self.loadVariables(test)
@@ -80,7 +82,7 @@ class WLMStatsCruncher(object):
         self.log.write(u'-----------------------\n%s: Successfully started %srun.\n' %(datetime.datetime.utcnow(), 'test ' if test else ''))
         
         try:
-            self.fCrunch  = codecs.open(u'%s_crunched.json' %self.output, 'w', 'utf-8')
+            self.fCrunch  = codecs.open(u'%s_%s-crunched.json' %(self.output, self.indataType), 'w', 'utf-8')
         except IOError, e:
             self.log.write(u'Error creating output files: %s\n' %e)
             exit(1)
@@ -106,18 +108,22 @@ class WLMStatsCruncher(object):
         #done
         self.log.close()
     
-    def run(self, datatype=None, verbose=False, testing=False):
+    def run(self, verbose=False, testing=False):
         '''will essentially only be a list of called functions dealing 
         with each bit and then outputting it.
         Checks self.indataType to decide which list to follow'''
         
-        self.analyseUsers(detailed=True) #images per user
-        self.analyseGeo()   #images per county/muni and type
-        self.analyseType()  #images per type
-        self.analyseObjects(top=3) #most popular images per type
-        self.analyseLicense() #which licenses were used
-        self.analyseDates()   #when were the images created
-        self.analyseListStatus() #are the imags in lists?
+        if self.indataType == 'images':
+            self.analyseUsers(detailed=True) #images per user
+            self.analyseGeo()   #images per county/muni and type
+            self.analyseType()  #images per type
+            self.analyseObjects(top=3) #most popular images per type
+            self.analyseLicense() #which licenses were used
+            self.analyseDates()   #when were the images created
+            self.analyseListStatus() #are the imags in lists?
+        elif self.indataType == 'munis':
+            print u'Muni analysis is still in WLMStats.py'
+            #self.analyseMuniStatistics()
         
         #Done
     

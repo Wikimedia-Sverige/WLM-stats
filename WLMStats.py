@@ -32,7 +32,7 @@ import re #only used for wikitext parsing
 class WLMStats(object):
     def versionInfo(self):
         '''Version specific variables'''
-        self.scriptversion = u'0.2'
+        self.scriptversion = u'0.21'
         self.scriptname = u'WLM_Statistics'
         self.infoTemplate = [u'Template:Information',] #supported info templates - based on what is suppported by parseImageInfo
         self.commonsMetadataExtension = 1.2 # the version of the extention for which the script was designed
@@ -111,6 +111,7 @@ class WLMStats(object):
         #TODO cleaner variablenames one only json is outputted
         try:
             self.fMonumentsDump = codecs.open(u'%s_monuments.json' %self.output, 'w', 'utf-8')
+            self.fMuniDump = codecs.open(u'%s_muni.json' %self.output, 'w', 'utf-8')
             self.fMuni   = codecs.open(u'%s_muni.csv' %self.output, 'w', 'utf-8')
             self.fImagesDump = codecs.open(u'%s_images.json' %self.output, 'w', 'utf-8')
             self.fImages = codecs.open(u'%s_images.csv' %self.output, 'w', 'utf-8')
@@ -147,6 +148,12 @@ class WLMStats(object):
             if v['per_muni']:
                 self.hApi.getMuniStatistics(table=v['table'], muniStats=muniStatsRaw, debug=False)
         #analyse and output
+        self.fMuniDump.write(ujson.dumps({
+            'WLMStatsVersion':self.scriptversion,
+            'type':'munis',
+            'data':muniStatsRaw,
+            'settings':self.settings
+            }))
         #TODO output as .json and move analysis to Cruncher
         self.outputCSV(self.analyseMuniStatistics(muniStatsRaw), self.fMuni)
         
@@ -229,6 +236,7 @@ class WLMStats(object):
             monuments[iid] = {
                 'muni':        m['municipality'],
                 'illustrated': m['image'] != '',
+                'image':       m['image'],
                 'lon':         m['lon'],
                 'lat':         m['lat'],
                 'county':      m['adm1'],
