@@ -11,10 +11,7 @@
 #
 # @TODO
 #   Move muni analysis to cruncher
-#   Eliminate csv outputs
-#   Clean up output names
-#   Replace _structure by from Collections import SortedDict as SortedDict
-#       or eliminate it as part of csv elimination
+#   Eliminate csv outputs (and as part of that the _structure mechanism
 #
 # @TODO - maybe
 #   Retrieve info for objects not in lists
@@ -113,7 +110,6 @@ class WLMStats(object):
             self.fMuniDump = codecs.open(u'%s_muni.json' %self.output, 'w', 'utf-8')
             self.fMuni   = codecs.open(u'%s_muni.csv' %self.output, 'w', 'utf-8')
             self.fImagesDump = codecs.open(u'%s_images.json' %self.output, 'w', 'utf-8')
-            self.fImages = codecs.open(u'%s_images.csv' %self.output, 'w', 'utf-8')
         except IOError, e:
             self.log.write(u'Error creating output files: %s\n' %e)
             exit(1)
@@ -203,16 +199,9 @@ class WLMStats(object):
             }))
         #self.fImagesDump.write(ujson.dumps(self.images))
         self.fImagesDump.close()
-        #tmp
-        self.images['_structure'] = {'copyright':False, 'title':False, 'photographer':False, 'created':False, 'uploader':False, 'monument_type':True, 'monument_id':True, 'in_list' :False, 'problematic' :False, 'muni':False, 'county':False}
-        self.outputCSV(self.images, self.fImages)
         
         #consider looking in external database for items with not_in_list:true
         #output to .state file + make it possible to run from this point
-        
-        #analyse image data on both an individual level and on a per-unique-id basis and output
-        ##This part should definitly be runnable from state file (since the previous is the expensive bit)
-        ##output to csv(s) (f?)
         
         return None
 
