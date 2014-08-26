@@ -81,15 +81,7 @@ class WLMStatsCruncher(object):
         #confirm succesful load to log together with timestamp
         self.log.write(u'-----------------------\n%s: Successfully started %srun.\n' %(datetime.datetime.utcnow(), 'test ' if test else ''))
         
-        try:
-            self.fCrunch  = codecs.open(u'%s_%s-crunched.json' %(self.output, self.indataType), 'w', 'utf-8')
-        except IOError, e:
-            self.log.write(u'Error creating output files: %s\n' %e)
-            exit(1)
-        
         #ready to run
-        
-        #run
         try:
             if test:
                 self.run(verbose=True, testing=True)
