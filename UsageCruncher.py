@@ -9,7 +9,9 @@
 # in the competition. Could be integrated into WLMStatsCruncher if all
 # files were analysed at once
 # 
-# 
+# @TODO:
+# Integrate in main cruncher
+#
 import codecs, ujson
 import datetime #for timestamps  in log
 
@@ -23,8 +25,6 @@ class UsageCruncher(object):
     def loadVariables(self, test):
         '''semi-stable variables which are not project specific'''
         self.logFilename = u'¤WLMSUsageCruncher.log'
-        self.imagesFile = u'./output/wlm-se-2013_images.json'
-        self.monumentsFile = u'./output/wlm-se-2013_monuments.json'
         self.output = "analysis/"
         self.commons_siteurl = 'https://commons.wikimedia.org'
         self.reqKeys = [u'type', u'data', u'WLMStatsVersion', u'settings']
@@ -69,8 +69,10 @@ class UsageCruncher(object):
         self.log.write(u'%s: Successfully loaded %s-file.\n' %(datetime.datetime.utcnow(), indataType))
         return indata, jIn['settings']['identifier']
 
-    def __init__(self, verbose=False, test=False):
+    def __init__(self, imagesFile, monumentsFile, verbose=False, test=False):
         self.versionInfo()
+        self.imagesFile = imagesFile
+        self.monumentsFile = monumentsFile
         varErrors = self.loadVariables(test)
         if varErrors:
             self.log.write(u'%s\n' %varErrors)
@@ -138,3 +140,17 @@ class UsageCruncher(object):
         
 class MyException(Exception):
     pass
+
+if __name__ == '__main__':
+    import sys
+    usage = '''Usage: python UsageCruncher.py imagefile monumentsfile
+\timagefile: the json indata file (the *_images.json output of WlmStats)
+\tmonumentsfile: the json indata file (the *_monuments.json output of WlmStats)
+example: python UsageCruncher.py ./output/wlm-se-2012_images.json ./output/wlm-se-2012_monuments.json
+'''
+    argv = sys.argv[1:]
+    if len(argv) == 2:
+        UsageCruncher(argv[0], argv[1])
+    else:
+        print usage
+#EoF    l   
