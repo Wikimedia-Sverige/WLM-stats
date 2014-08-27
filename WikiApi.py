@@ -1,1 +1,1 @@
-../ODOK/tools/WikiApi.py
+/lokal-profil/ODOK/tools/WikiApi.py
