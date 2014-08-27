@@ -184,6 +184,8 @@ class WLMStatsCruncher(object):
             f.write('#no. blanks: %d\n' %blanks)
             f.write('#user|no. images|no. uniques|registration|edits|gender|emailable\n')
             for k, v in results.iteritems():
+                if not k in userinfo.keys():
+                    k = k.replace('_',' ') #Since these are automatically converted for API, but should remain in other cases
                 f.write('%s|%d|%d|%s|%s|%s|%s\n' %(k, sum(v.values()), len(v), userinfo[k]['reg'], userinfo[k]['edits'], userinfo[k]['gender'], userinfo[k]['emailable']))
             f.close()
         
