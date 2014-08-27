@@ -1,0 +1,40 @@
+{
+  "date": "2012-09",
+  "identifier": "wlm-se-2012",
+  "cats": [
+    "Category:Images from Wiki Loves Monuments 2012 in Sweden"
+  ],
+  "types": {  
+      "bbr": {
+        "table": "se-bbr",
+        "default_wp_cat": [
+          "Listor över byggnadsminnen i Sverige per region"
+        ],
+        "commons_cat": "Protected buildings in Sweden with known IDs",
+        "commons_template": "BBR",
+        "url_pattern": [
+            "http://kulturarvsdata.se/raa/bbr/html/",
+            "http://kulturarvsdata.se/raa/bbra/html/",
+            "http://kulturarvsdata.se/raa/bbrb/html/",
+            "http://kulturarvsdata.se/raa/bbrm/html/",
+            "http://www.bebyggelseregistret.raa.se/bbr2/anlaggning/visaHistorik.raa?page=historik&visaHistorik=true&anlaggningId="
+        ],
+        "per_muni": true,
+        "url_promised": true
+      },
+      "fmis": {
+        "table": "se-fornmin",
+        "default_wp_cat": [
+          "Listor över fornminnen i Sverige per kommun",
+          "Listor över fornminnen i Sverige per socken"
+        ],
+        "commons_cat": "Archaeological monuments in Sweden with known IDs",
+        "commons_template": "Fornminne",
+        "url_pattern": [
+            "http://kulturarvsdata.se/raa/fmi/html/"
+        ],
+        "per_muni": true,
+        "url_promised": true
+      }
+  }
+}
