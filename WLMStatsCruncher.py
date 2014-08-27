@@ -33,7 +33,7 @@ class WLMStatsCruncher(object):
         self.output = "analysis/"
         self.commons_siteurl = 'https://commons.wikimedia.org'
         self.reqKeys = [u'type', u'data', u'WLMStatsVersion', u'settings']
-        self.supportedTypes = ['images',]
+        self.supportedTypes = ['images', 'munis']
         
         #load dataDict file
         try:
@@ -114,8 +114,7 @@ class WLMStatsCruncher(object):
             self.analyseDates()   #when were the images created
             self.analyseListStatus() #are the imags in lists?
         elif self.indataType == 'munis':
-            print u'Muni analysis is still in WLMStats.py'
-            #self.analyseMuniStatistics()
+            self.analyseMuniStatistics()
         
         #Done
     
@@ -428,6 +427,71 @@ class WLMStatsCruncher(object):
                     d[user['name']]['emailable'] = True
         #done
         return d
+
+    def analyseMuniStatistics(self, output=True):
+        '''analyses hApi.getMuniStatistics results and returns output formated for outputCSV()'''
+        #self.indata has the form MuniName': {table1: {'illustrated': int, 'total': int, 'coords': int}, u'table2': ...
+        allowed_props = [u'illustrated', u'coords'] #allowed properties, in addition to total
+        muniStats = {}
+        for k, v in self.indata.iteritems():
+            muniStats[k] = {
+                'muni_code': self.dataDicts['muni_name2code'][k].zfill(4) if k in self.dataDicts['muni_name2code'].keys() else None,
+                'muni_name': k
+                }
+            aggregate = {'total':0}
+            for prop in allowed_props:
+                aggregate[prop] = 0
+            muniStats[k]['types'] = {}
+            for t, vv in v.iteritems():
+                total = vv['total']
+                muniStats[k]['types'][t] = {'total': '%d' %total}
+                aggregate['total'] += total
+                for prop in allowed_props:
+                    val = vv[prop]
+                    aggregate[prop] += val
+                    muniStats[k]['types'][t][prop] = '%d' %val
+                    if total == 0:
+                        muniStats[k]['types'][t][u'%s-percentage' %prop] = '%.3f' %float('NaN')
+                    else:
+                        muniStats[k]['types'][t][u'%s-percentage' %prop] = '%.3f' %(val/float(total))
+            total = aggregate['total']
+            muniStats[k]['sum'] = {'total': '%d' %total}
+            for prop in allowed_props:
+                val = aggregate[prop]
+                muniStats[k]['sum'][prop] = '%d' %val
+                if total == 0:
+                    muniStats[k]['sum'][u'%s-percentage' %prop] = '%.3f' %float('NaN')
+                else:
+                    muniStats[k]['sum'][u'%s-percentage' %prop] = '%.3f' %(val/float(total))
+        
+        if output:
+            #output
+            allowed_types = muniStats.iteritems().next()[1]['types'].keys()
+            f = codecs.open(u'%s_coverage.csv' %self.output, 'w', 'utf-8')
+            header_row = [u'sum_total', ]
+            for prop in allowed_props:
+                header_row.append(u'sum_%s' %prop)
+                header_row.append(u'sum_%s-percentage' %prop)
+            for t in allowed_types:
+                header_row.append(u'%s_total' %t)
+                for prop in allowed_props:
+                    header_row.append(u'%s_%s' %(t, prop))
+                    header_row.append(u'%s_%s-percentage' %(t, prop))
+            f.write(u'#municipality code|municipality name|county|%s\n' %'|'.join(header_row))
+            #need to generate list type/prop list here and then keep same order
+            #possibly using from Collections import SortedDict as SortedDict
+            for k, v in muniStats.iteritems():
+                muni_row = [muniStats[k]['sum']['total'],]
+                for prop in allowed_props:
+                    muni_row.append(muniStats[k]['sum'][prop])
+                    muni_row.append(muniStats[k]['sum'][u'%s-percentage' %prop])
+                for t in allowed_types:
+                    muni_row.append(muniStats[k]['types'][t]['total'])
+                    for prop in allowed_props:
+                        muni_row.append(muniStats[k]['types'][t][prop])
+                        muni_row.append(muniStats[k]['types'][t][u'%s-percentage' %prop])
+                f.write('%s|%s|%s|%s\n' %(v['muni_code'], k, self.dataDicts['muni_code2county_code'][v['muni_code'].lstrip('0')], '|'.join(muni_row)))
+            f.close()
 
 def sortedDict(ddict):
     '''turns a dict into a sorted list of tuples'''

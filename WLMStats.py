@@ -9,10 +9,6 @@
 # a reboot of the WLM stats-getter (WLM2011, 2011-09-30)
 # based heavily on the EuropeanaHarvest
 #
-# @TODO
-#   Move muni analysis to cruncher
-#   Eliminate csv outputs (and as part of that the _structure mechanism
-#
 # @TODO - maybe
 #   Retrieve info for objects not in lists
 #       Would require lookup against K-samsök etc.
@@ -108,7 +104,6 @@ class WLMStats(object):
         try:
             self.fMonumentsDump = codecs.open(u'%s_monuments.json' %self.output, 'w', 'utf-8')
             self.fMuniDump = codecs.open(u'%s_muni.json' %self.output, 'w', 'utf-8')
-            self.fMuni   = codecs.open(u'%s_muni.csv' %self.output, 'w', 'utf-8')
             self.fImagesDump = codecs.open(u'%s_images.json' %self.output, 'w', 'utf-8')
         except IOError, e:
             self.log.write(u'Error creating output files: %s\n' %e)
@@ -149,8 +144,6 @@ class WLMStats(object):
             'data':muniStatsRaw,
             'settings':self.settings
             }))
-        #TODO output as .json and move analysis to Cruncher
-        self.outputCSV(self.analyseMuniStatistics(muniStatsRaw), self.fMuni)
         
         #get all heritage_objects from heritage api and repackage to have table+id as key in dict
         #TODO return errors
@@ -315,91 +308,6 @@ class WLMStats(object):
         for k in unsupported:
             #del self.images[k]
             self.images[k]['problematic']=True
-
-    def analyseMuniStatistics(self, muniStatsRaw):
-        '''analyses hApi.getMuniStatistics results and returns output formated for outputCSV()'''
-        #muniStatsRaw now has the form MuniName': {table1: {'illustrated': int, 'total': int, 'coords': int}, u'table2': ...
-        muniStats = {}
-        for k, v in muniStatsRaw.iteritems():
-            muniStats[k] = {
-                'muni_code': self.dataDicts['muni_name2code'][k].zfill(4) if k in self.dataDicts['muni_name2code'].keys() else None,
-                'muni_name': k
-                }
-            aggregate = {}
-            for t, vv in v.iteritems():
-                total = vv['total']
-                for prop, val in vv.iteritems():
-                    if prop in aggregate.keys():
-                        aggregate[prop] += val
-                    else:
-                        aggregate[prop] = val
-                    muniStats[k][u'%s-%s' %(t,prop)] = '%d' %val
-                    if prop == 'total':continue
-                    if total == 0:
-                        muniStats[k][u'%s-%s-percentage' %(t,prop)] = None
-                    else:
-                        muniStats[k][u'%s-%s-percentage' %(t,prop)] = '%.3f' %(val/float(total))
-            total = aggregate['total']
-            for prop, val in aggregate.iteritems():
-                muniStats[k][u'sum-%s' %(prop)] = '%d' %val
-                if prop == 'total':continue
-                if total == 0:
-                    muniStats[k][u'sum-%s-percentage' %(prop)] = None
-                else:
-                    muniStats[k][u'sum-%s-percentage' %(prop)] = '%.3f' %(val/float(total))
-        
-        #set up _structure
-        muniStats['_structure'] = {}
-        for k, v in muniStats.iteritems().next()[1].iteritems():
-            muniStats['_structure'][k] = False
-        return muniStats
-    
-    def outputCSV(self, data, f):
-        '''output the given data as a "|"-separated csv
-        (new line characters are replaced by ¤ and "|"-symbols by "!")
-        data must be a dict with a _structure-key
-        the _structure object should be a dict with the same structure as
-        the real objects but the value should be True for any properties
-        which are lists.
-        No non-duplicated information should be stored in the name of
-        the main keys.
-        '''
-        #consider using _structure to tag ints and floats
-        #consider having _structure being a ordered list of {'name':'type'}
-        
-        #analyse structure and output header
-        key_names = data['_structure'].keys()
-        list_keys=[]
-        for k, v in data['_structure'].iteritems():
-            if v: list_keys.append(k)
-        f.write(u'#%s\n' %'|'.join(key_names))
-        
-        #output data
-        for k,v in data.iteritems():
-            if k == '_structure': continue
-            for kk, vv in v.iteritems():
-                if vv is None:
-                    v[kk] = ''
-                if kk in list_keys:
-                    count=0
-                    for kkk in v[kk]:
-                        if type(kkk) != unicode and type(kkk) != str:
-                            v[kk][count] = str([kkk])
-                        count+=1
-                    v[kk] = ';'.join(v[kk])
-                if type(v[kk]) == unicode or type(v[kk]) == str:
-                    v[kk] = v[kk].replace('|','!').replace('\n',u'¤')
-                else:
-                    v[kk] = str(v[kk])
-            #output in same order as header
-            vals = []
-            for kk in key_names:
-                try:
-                    vals.append(v[kk])
-                except KeyError, e: #no guarantee that each column exist for each row
-                    vals.append('')
-            f.write(u'%s\n' %'|'.join(vals))
-        f.close()
 
 #Start of Europeana.py fork - some methods may be overly complicated for this purpose
     def getImageInfos(self, maincat, imageInfo={}, verbose=False, testing=False):
