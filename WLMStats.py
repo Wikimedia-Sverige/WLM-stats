@@ -295,7 +295,7 @@ class WLMStats(object):
                     url_promised = False
             
             #get content for that pageID (can only retrieve one at a time)
-            content, getContentError = self.getContent(k, getwikitext=url_promised)
+            content, getContentError = self.getContent(k, getwikitext=not(url_promised))
             if not getContentError:
                 getContentError = self.parseContent(k, content)
                 if not getContentError:
@@ -515,6 +515,9 @@ class WLMStats(object):
         for t in contentJson['templates']:
             if 'exists' in t.keys(): templates.append(t['*'])
         extLinks = contentJson['externallinks'] #not really needed
+        wikitext = ''
+        if 'wikitext' in contentJson.keys():
+            wikitext = contentJson['wikitext']['*']
         
         #Checking that the information structure is supported
         supported = False
@@ -548,7 +551,7 @@ class WLMStats(object):
                     
                     #search for {{templatename| to remove false positives (e.g. {{templatename-not|) and ensure there is always at least one parameter
                     while wikitext.find(('{{'+type_template+'|').lower()) >=0: 
-                        wikitext = wikitext[wikitext.find('{{'+type_template+'|')+len('{{'):] #crop until first tag, incl. brackets to avoid loop
+                        wikitext = wikitext[wikitext.find(('{{'+type_template+'|').lower())+len('{{'):] #crop until first tag, incl. brackets to avoid loop
                         tags.append(wikitext[:wikitext.find('}}')]) # isolate first tag
                         
                     if tags:
@@ -556,10 +559,11 @@ class WLMStats(object):
                         for t in tags:
                             idNo = None
                             vals = t.split('|')
-                            if not '=' in vals[1]: #first one is template name
+                            if len(vals) < 2:
+                                continue
+                            elif not '=' in vals[1]: #first one is template name
                                 idNo = vals[1].strip()
                                 self.images[pageId][u'monument_id'].append((mt, vals[1].strip()))
-                                
                             else:
                                 for v in vals[1:]:
                                     p = v.split('=')
@@ -569,9 +573,8 @@ class WLMStats(object):
                             #store idNo or return error
                             if idNo:
                                 self.images[pageId][u'monument_id'].append((mt, idNo))
-                                self.log.write('Isolated id from tag: %s from %s' %(tag,idNo)) #for TESTING
                             else:
-                                return u'categorised as %s, with template %s, and tag %s but idNo could not be isolated' %(mt, type_template, tag)
+                                return u'categorised as %s, with template %s, and tag %s but idNo could not be isolated' %(mt, type_template, t)
                     else:
                         return u'categorised as %s, with template %s but tag could not be isolated' %(mt, type_template)
                 else:
