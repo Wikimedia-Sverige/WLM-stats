@@ -547,7 +547,7 @@ class WLMStats(object):
                     ##replace '{{template:' by '{{' (sometimes still used)
                     ## remove any whitespace between '{{' and template name
                     ## remove any whitespace before '|'
-                    wikitext = re.sub(r'{{[(template:|\s) ]*', '{{', re.sub(r'[\s]*\|', '|', wikitext.lower()))
+                    wikitext = re.sub(r'{{(template:|\s)*', '{{', re.sub(r'[\s]*\|', '|', wikitext.lower()))
                     
                     #search for {{templatename| to remove false positives (e.g. {{templatename-not|) and ensure there is always at least one parameter
                     while wikitext.find(('{{'+type_template+'|').lower()) >=0: 
