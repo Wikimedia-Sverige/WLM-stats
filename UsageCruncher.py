@@ -130,7 +130,7 @@ class UsageCruncher(object):
         #https://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
         #output
         f = codecs.open(u'%s_usage.csv' %self.output, 'w', 'utf-8')
-        f.write('#Note that the same image can be cusd by multiple objects and types\n')
+        f.write('#Note that the same image can be used by multiple objects and types\n')
         f.write('#no. of uniques irrelevant of type: %d\n' %uniques)
         f.write('#type|no. images used|no. uniques used|total used images\n')
         for k, v in used_wlm.iteritems():
