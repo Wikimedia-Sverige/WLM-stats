@@ -24,7 +24,7 @@ class UsageCruncher(object):
     
     def loadVariables(self, test):
         '''semi-stable variables which are not project specific'''
-        self.logFilename = u'¤WLMSUsageCruncher.log'
+        self.logFilename = u'¤WLMUsageCruncher.log'
         self.output = "analysis/"
         self.commons_siteurl = 'https://commons.wikimedia.org'
         self.reqKeys = [u'type', u'data', u'WLMStatsVersion', u'settings']
