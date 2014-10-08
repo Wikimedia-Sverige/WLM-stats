@@ -153,4 +153,4 @@ example: python UsageCruncher.py ./output/wlm-se-2012_images.json ./output/wlm-s
         UsageCruncher(argv[0], argv[1])
     else:
         print usage
-#EoF    l   
+#EoF
