@@ -242,6 +242,8 @@ class WLMStatsCruncher(object):
                 if not m in results.keys():
                     results[m]={}
                 for m_id in monument_ids:
+                    if not m_id[0] == m:  # skip id's related to different typw
+                        continue
                     monument_id = ';'.join(m_id)
                     if not monument_id in results[m].keys():
                         results[m][monument_id] = 1
