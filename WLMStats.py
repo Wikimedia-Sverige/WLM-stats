@@ -15,11 +15,13 @@
 #   Retrieve information about type (kyrka, byggnad, fornminnestyp)
 #       Would require going trhough lists, and K-samsök
 
-import codecs, ujson
-import datetime #for timestamps  in log
+import codecs
+import ujson
+import iso8601
+import datetime  # for timestamps  in log
 import WikiApi as wikiApi
 import HeritageApi as heritageApi
-import re #only used for wikitext parsing
+import re  # only used for wikitext parsing
 
 class WLMStats(object):
     def versionInfo(self):
@@ -43,7 +45,7 @@ class WLMStats(object):
         #distingusih testdata
         if test:
             self.output += u'test.'
-            self.settings_file = u'settings.test.json'
+            self.settings_file = u'indata/settings.test.json'
         
         #load settings file
         requiredKeys = ['types', 'cats', 'date', 'identifier'] #keys which are explicitly called later
@@ -157,6 +159,7 @@ class WLMStats(object):
             }))
         #self.fMonumentsDump.write(ujson.dumps(monuments))
         self.fMonumentsDump.close()
+        self.fMuniDump.close()
         
         #get all images for the relevant categories, parse the image info
         ##set monument_type(s) using any tracker categories (empty if none found)
@@ -343,6 +346,7 @@ class WLMStats(object):
                                         ('generator', 'categorymembers'),
                                         ('gcmprop', 'title'),
                                         ('gcmnamespace', '6'),
+                                        ('rawcontinue', ''),
                                         ('gcmlimit', str(gcmlimit)),
                                         ('gcmtitle', maincat.encode('utf-8'))
                                        ])
@@ -361,6 +365,7 @@ class WLMStats(object):
                                             ('generator', 'categorymembers'),
                                             ('gcmprop', 'title'),
                                             ('gcmnamespace', '6'),
+                                            ('rawcontinue', ''),
                                             ('gcmlimit', str(gcmlimit)),
                                             ('gcmcontinue',jsonr['query-continue']['categorymembers']['gcmcontinue']),
                                             ('gcmtitle', maincat.encode('utf-8'))
@@ -483,8 +488,12 @@ class WLMStats(object):
             elif u'<time' in dateOrig: #weird
                 return (False, u'%s did not have a recognised datestamp: %s' %(title, dateOrig))
             else: #just plain text
-                self.log.write(u'%s has plain text date: %s\n'%(title, dateOrig))
-                obj['created'] = dateOrig
+                try:  # try iso conversion
+                    date = iso8601.parse_date(dateOrig)
+                    obj['created'] = date.strftime("%Y-%m-%d")
+                except:
+                    self.log.write(u'%s has plain text date: %s\n'%(title, dateOrig))
+                    obj['created'] = dateOrig
         elif dateDig and dateDig != u'0000:00:00 00:00:00':
             obj['created'] = dateDig
         elif datePlain and datePlain != u'0000:00:00 00:00:00':

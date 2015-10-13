@@ -396,8 +396,8 @@ class WLMStatsCruncher(object):
         '''
         get aditional info about the uploaders
         this requires the wikiapi
+        TODO: Deprecate in favour of WikiApi version
         '''
-        #TODO: Move to wikiApi
         import WikiApi as wikiApi
         maxUsers = 50
         #Look for config file and connect to api
@@ -506,7 +506,10 @@ class WLMStatsCruncher(object):
                         for prop in allowed_props:
                             muni_row.append('0') #prop
                             muni_row.append('0') #prop-percentage
-                f.write('%s|%s|%s|%s\n' %(v['muni_code'], k, self.dataDicts['muni_code2county_code'][v['muni_code'].lstrip('0')], '|'.join(muni_row)))
+                if v['muni_code']:
+                    f.write('%s|%s|%s|%s\n' %(v['muni_code'], k, self.dataDicts['muni_code2county_code'][v['muni_code'].lstrip('0')], '|'.join(muni_row)))
+                else:
+                    self.log.write("Unknown muni: %s (%s)" % (k, v['types'].keys()[0]))
             f.close()
 
 def sortedDict(ddict):
