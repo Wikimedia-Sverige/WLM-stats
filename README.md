@@ -8,3 +8,6 @@ meaning there is still plenty of crud.
 
 Does what it needs to but still a work in progress...
 
+To run: "`python run.py` *`infile`*"
+(where *infile* is a file in `/indata/`)
+

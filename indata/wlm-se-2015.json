@@ -1,0 +1,66 @@
+{
+  "date": "2015-09",
+  "identifier": "wlm-se-2015",
+  "cats": [
+    "Category:Images from Wiki Loves Monuments 2015 in Sweden"
+  ],
+  "types": {  
+      "bbr": {
+        "table": "se-bbr",
+        "default_wp_cat": [
+          "Listor över byggnadsminnen i Sverige per region"
+        ],
+        "commons_cat": "Protected buildings in Sweden with known IDs",
+        "commons_template": "BBR",
+        "url_pattern": [
+            "http://kulturarvsdata.se/raa/bbr/html/",
+            "http://kulturarvsdata.se/raa/bbra/html/",
+            "http://kulturarvsdata.se/raa/bbrb/html/",
+            "http://kulturarvsdata.se/raa/bbrm/html/",
+            "http://www.bebyggelseregistret.raa.se/bbr2/anlaggning/visaHistorik.raa?page=historik&visaHistorik=true&anlaggningId="
+        ],
+        "per_muni": true,
+        "url_promised": true
+      },
+      "fmis": {
+        "table": "se-fornmin",
+        "default_wp_cat": [
+          "Listor över fornminnen i Sverige per kommun",
+          "Listor över fornminnen i Sverige per socken"
+        ],
+        "commons_cat": "Archaeological monuments in Sweden with known IDs",
+        "commons_template": "Fornminne",
+        "url_pattern": [
+            "http://kulturarvsdata.se/raa/fmi/html/"
+        ],
+        "per_muni": true,
+        "url_promised": true
+      },
+      "fartyg":{
+        "table": "se-ship",
+        "default_wp_cat": [
+          "K-märkta fartyg"
+        ],
+        "commons_cat": "Listed historical ships in Sweden with known IDs",
+        "commons_template": "K-Fartyg",
+        "url_pattern": [
+            "http://www.sjohistoriska.se/sv/Kusten-runt/Fartyg--batar/K-markning-av-fartyg/K-markta-fartyg/"
+        ],
+        "per_muni": false, 
+        "url_promised": false
+      },
+      "arbetsliv":{
+        "table": "se-arbetsl",
+        "default_wp_cat": [
+          "Listor över arbetslivsmuseer i Sverige per region"
+        ],
+        "commons_cat": "Working Life Museums in Sweden with known IDs",
+        "commons_template": "Arbetslivsmuseum",
+        "url_pattern": [
+            "http://www.arbetslivsmuseer.se/"
+        ],
+        "per_muni": true, 
+        "url_promised": false
+      }
+  }
+}
