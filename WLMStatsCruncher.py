@@ -509,7 +509,7 @@ class WLMStatsCruncher(object):
                 if v['muni_code']:
                     f.write('%s|%s|%s|%s\n' %(v['muni_code'], k, self.dataDicts['muni_code2county_code'][v['muni_code'].lstrip('0')], '|'.join(muni_row)))
                 else:
-                    self.log.write("Unknown muni: %s (%s)" % (k, v['types'].keys()[0]))
+                    self.log.write("Unknown muni: %s (%s)\n" % (k, v['types'].keys()[0]))
             f.close()
 
 def sortedDict(ddict):
