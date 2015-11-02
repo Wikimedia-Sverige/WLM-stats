@@ -24,7 +24,7 @@ import common as common
 class WLMStatsCruncher(object):
     def versionInfo(self):
         '''Version specific variables'''
-        self.scriptversion = u'0.21'
+        self.scriptversion = u'0.22'
         self.scriptname = u'WLM_Statistics_Cruncher'
         self.WLMStatsVersion = u'0.21' # the version of WLMStats for which the cruncher was designed
 
@@ -169,28 +169,56 @@ class WLMStatsCruncher(object):
         for k, v in results.iteritems():
             f.write('%s|%d|%d\n' %(k, sum(v.values()), len(v)))
         f.close()
-    
+
     def analyseUsers(self, output=True, detailed=False):
         if not detailed:
-            return self.analyseSimple('uploader','users',output=output)
-            
-        #else
-        results, blanks = self.analyseSimple('uploader','users',output=output)
-        userinfo = self.getUserInfo(results.keys())
-        
-        #output
+            return self.analyseSimple('uploader', 'users', output=output)
+
+        # cannot use analyseSimple since we need to distinguish number
+        # of photos from number of monuments
+        users = {}
+        blanks = 0
+        for k, v in self.indata.iteritems():
+            uploader, monument_ids = v['uploader'], v['monument_id']
+            # skip any entries without valid monument_id or value
+            if any(k in ([], '') for k in (uploader, monument_ids)):
+                blanks += 1
+                continue
+            if uploader not in users.keys():
+                users[uploader] = {'monuments': {}, 'images': 0}
+            users[uploader]['images'] += 1
+            for m_id in monument_ids:
+                monument_id = ';'.join(m_id)
+                if monument_id not in users[uploader]['monuments'].keys():
+                    users[uploader]['monuments'][monument_id] = 0
+                users[uploader]['monuments'][monument_id] += 1
+
+        # get additional info
+        userinfo = self.getUserInfo(users.keys())
+
+        # output
         if output:
-            f = codecs.open(u'%s_users.csv' %self.output, 'w', 'utf-8')
-            f.write('#no. users: %d\n' %len(results))
-            f.write('#no. blanks: %d\n' %blanks)
-            f.write('#user|no. images|no. uniques|registration|edits|gender|emailable\n')
-            for k, v in results.iteritems():
-                if not k in userinfo.keys():
-                    k = k.replace('_',' ') #Since these are automatically converted for API, but should remain in other cases
-                f.write('%s|%d|%d|%s|%s|%s|%s\n' %(k, sum(v.values()), len(v), userinfo[k]['reg'], userinfo[k]['edits'], userinfo[k]['gender'], userinfo[k]['emailable']))
+            f = codecs.open(u'%s_users.csv' % self.output, 'w', 'utf-8')
+            f.write('#no. users: %d\n' % len(users))
+            f.write('#no. blanks: %d\n' % blanks)
+            f.write('#user|no.images|no. monuments|no. uniques|registration|'
+                    'edits|gender|emailable\n')
+            for k, v in users.iteritems():
+                if k not in userinfo.keys():
+                    # "_" are automatically converted for API
+                    k = k.replace('_', ' ')
+                f.write('%s|%d|%d|%d|%s|%s|%s|%s\n' %
+                        (k,
+                         v['images'],
+                         sum(v['monuments'].values()),
+                         len(v['monuments']),
+                         userinfo[k]['reg'],
+                         userinfo[k]['edits'],
+                         userinfo[k]['gender'],
+                         userinfo[k]['emailable']))
             f.close()
-        
-        return results, blanks, userinfo
+
+        return users, blanks, userinfo
 
     def analyseLicense(self, output=True):
         return self.analyseSimple('copyright','licenses',output=output)
