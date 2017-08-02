@@ -1,3 +1,5 @@
 config.py
 *.log
 *.test.*
+*.csv
+output/*.json
