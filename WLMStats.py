@@ -137,7 +137,7 @@ class WLMStats(object):
         #TODO return errors
         muniStatsRaw = {}
         for k, v in self.settings['types'].iteritems():
-            if v['per_muni']:
+            if v['per_muni'] and v['table']:
                 self.hApi.getMuniStatistics(table=v['table'], muniStats=muniStatsRaw, debug=False)
         #analyse and output
         self.fMuniDump.write(ujson.dumps({
@@ -209,6 +209,8 @@ class WLMStats(object):
         table_to_type = {}
         monumentDump = []
         for k, v in self.settings['types'].iteritems():
+            if not v['table']:
+                continue
             table_to_type[v['table']] = k
             monumentDump += self.hApi.getAllEntries(table=v['table'], verbose=verbose)
         

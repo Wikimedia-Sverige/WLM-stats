@@ -1,0 +1,22 @@
+{
+  "date": "2017-07",
+  "identifier": "wle-se-2017",
+  "cats": [
+    "Category:Images from Wiki Loves Earth 2017 in Sweden"
+  ],
+  "types": {  
+      "natur": {
+        "table": null,
+        "default_wp_cat": [
+          null
+        ],
+        "commons_cat": "Protected areas of Sweden with known IDs",
+        "commons_template": "Wiki Loves Earth Sweden",
+        "url_pattern": [
+            "http://skyddadnatur.naturvardsverket.se/sknat/?nvrid="
+        ],
+        "per_muni": true,
+        "url_promised": true
+      }
+  }
+}
