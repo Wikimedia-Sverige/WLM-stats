@@ -467,9 +467,11 @@ class WLMStats(object):
         
         ## Deal with licenses
         if licenseurl:
-            if licenseurl.startswith(u'http://creativecommons.org/licenses/'):
+            if licenseurl.startswith(u'http://creativecommons.org/licenses/') or \
+                    licenseurl.startswith(u'https://creativecommons.org/licenses/'):
                 obj[u'copyright'] = licenseShortName
-            elif licenseurl.startswith(u'http://creativecommons.org/publicdomain/'):
+            elif licenseurl.startswith(u'http://creativecommons.org/publicdomain/') or \
+                    licenseurl.startswith(u'https://creativecommons.org/publicdomain/'):
                 obj[u'copyright'] = 'PD'
             else:
                 return (False, u'%s did not have a CC-license URL and is not PD: %s (%s)' %(title, licenseurl, licenseShortName))
